@@ -10,8 +10,14 @@ import { defaultInput } from "@/lib/calculator/defaultInput";
 import { calculate } from "@/lib/calculator/formulaEngine";
 import type { UserInput, InsuranceResult } from "@/lib/calculator/types";
 
-// ─── Colors ───
-const C = { teal: "#0d9488", blue: "#3b82f6", emerald: "#10b981", amber: "#f59e0b", rose: "#f43f5e", purple: "#a855f7" };
+// ─── Color System: Sage & Warm ───
+const C = {
+  sage: "#A8B5A2", sageDark: "#6F8072", sageLight: "#E7ECE8",
+  warm: "#D8CBB8", warmLight: "#F3F0E9",
+  text: "#2F3430", textSec: "#66706A", textTer: "#8B948E",
+  teal: "#0d9488", blue: "#3b82f6", emerald: "#10b981",
+  amber: "#f59e0b", rose: "#f43f5e", purple: "#a855f7",
+};
 const CC = [C.blue, C.emerald, C.amber, C.rose];
 
 // ─── Helpers ───
@@ -38,9 +44,8 @@ const PAGE_ICONS = [I.user, I.wallet, I.heart, I.bolt, I.clock];
 const BUDGET_CI: Record<string, number> = { "1万以下": 0.5, "1-3万": 2, "3-5万": 4, "5-10万": 7.5, "10万以上": 12 };
 const BUDGET_MI: Record<string, number> = { "0.5万以下": 0.25, "0.5-1万": 0.75, "1-3万": 2, "3-5万": 4, "5万以上": 6 };
 
-// Health insurance type labels
 const HI_TYPES = ["社保医保", "惠民保", "百万医疗", "中端医疗", "高端医疗", "重疾险"] as const;
-const HI_COLORS = ["#0d9488", "#8b5cf6", "#3b82f6", "#f59e0b", "#f43f5e", "#06b6d4"];
+const HI_COLORS = ["#8FA089", "#A8B5A2", "#6F8072", "#C4B59E", "#D8CBB8", "#465549"];
 const MEMBERS = [
   { key: "p1", label: "第一支柱" },
   { key: "p2", label: "第二支柱" },
@@ -106,8 +111,7 @@ const PAGES: PG[] = [
   {
     title: "健康险配置",
     subtitle: "勾选家庭成员已有的健康险，勾选后可填写详细信息",
-    questions: [
-      // 健康险表格式多选 - 使用专用渲染
+    questions: [ // placeholder — rendered separately
     ],
   },
   {
@@ -151,21 +155,21 @@ const PAGES: PG[] = [
 
 // ─── Shared Components ───
 function StatCard({ label, value, trend }: { label: string; value: string; trend?: "good" | "bad" | "neutral" }) {
-  const tc = { good: "text-emerald-600", bad: "text-rose-500", neutral: "text-amber-500" };
+  const tc = { good: "text-sage-600", bad: "text-rose-400", neutral: "text-amber-500" };
   return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-xl border border-[#e8e8e8] p-5">
-      <div className="text-[11px] font-semibold text-[#a3a3a3] tracking-wider uppercase mb-1">{label}</div>
-      <div className={cn("text-[26px] font-bold tracking-tight", trend ? tc[trend] : "text-[#171717]")}>{value}</div>
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-card p-6">
+      <div className="text-[11px] font-semibold text-text-tertiary tracking-wider uppercase mb-1">{label}</div>
+      <div className={cn("text-[26px] font-bold tracking-tight font-display", trend ? tc[trend] : "text-text-primary")}>{value}</div>
     </motion.div>
   );
 }
 
 function R({ label, value, trend }: { label: string; value: string; trend?: "good" | "bad" | "neutral" }) {
-  const tc = { good: "text-emerald-600", bad: "text-rose-500", neutral: "text-amber-600" };
+  const tc = { good: "text-sage-600", bad: "text-rose-400", neutral: "text-amber-500" };
   return (
-    <div className="flex justify-between items-center py-2.5 border-b border-[#f0f0f0] last:border-0">
-      <span className="text-sm text-[#525252]">{label}</span>
-      <span className={cn("text-sm font-semibold", trend ? tc[trend] : "text-[#171717]")}>{value}</span>
+    <div className="flex justify-between items-center py-2.5 border-b border-sage-100 last:border-0">
+      <span className="text-sm text-text-secondary">{label}</span>
+      <span className={cn("text-sm font-semibold", trend ? tc[trend] : "text-text-primary")}>{value}</span>
     </div>
   );
 }
@@ -180,10 +184,10 @@ function PersonTabs({ result, color }: { result: Record<string, unknown>; color:
   };
   return (
     <div>
-      <div className="flex gap-1 p-0.5 bg-[#f5f5f5] rounded-lg mb-4">
+      <div className="flex gap-1 p-0.5 bg-sage-50/60 rounded-xl mb-4">
         {tabs.map((t) => (
           <button key={t.k} onClick={() => setTab(t.k)}
-            className={cn("flex-1 py-1.5 text-xs font-medium rounded-md transition-all", tab === t.k ? "bg-white shadow-sm text-[#171717]" : "text-[#a3a3a3]")}>{t.l}</button>
+            className={cn("flex-1 py-1.5 text-xs font-medium rounded-lg transition-all", tab === t.k ? "glass shadow-sm text-text-primary" : "text-text-tertiary hover:text-text-secondary")}>{t.l}</button>
         ))}
       </div>
       <AnimatePresence mode="wait">
@@ -193,34 +197,28 @@ function PersonTabs({ result, color }: { result: Record<string, unknown>; color:
   );
 }
 
-// ─── Question Item ───
 function QuestionItem({ q, val, onChange, index }: { q: Q; val: unknown; onChange: (k: string, v: unknown) => void; index: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: index * 0.05, ease: [0.25, 0.1, 0.25, 1] }}
-      className="group"
     >
-      <div className="bg-white rounded-xl border border-[#e8e8e8] p-5 transition-all duration-200 hover:border-[#d4d4d4] hover:shadow-sm">
-        <div className="flex items-start gap-3.5">
-          {/* Icon */}
-          <div className="w-9 h-9 rounded-xl bg-[#f0fdfa] flex items-center justify-center shrink-0 mt-0.5">
-            <svg className="w-4.5 h-4.5 text-[#0d9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor" dangerouslySetInnerHTML={{ __html: q.icon }} />
+      <div className="glass rounded-card p-6 transition-all duration-300 hover:shadow-[0_10px_30px_rgba(168,181,162,0.08)]">
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 rounded-xl bg-sage-50 flex items-center justify-center shrink-0 mt-0.5">
+            <svg className="w-5 h-5 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" dangerouslySetInnerHTML={{ __html: q.icon }} />
           </div>
-          {/* Content */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-0.5">
-              <span className="text-sm font-semibold text-[#171717]">{q.label}</span>
-              {q.desc && (
-                <span className="hidden sm:inline text-[11px] text-[#a3a3a3] truncate">— {q.desc}</span>
-              )}
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-sm font-semibold text-text-primary">{q.label}</span>
+              {q.desc && <span className="hidden sm:inline text-[11px] text-text-tertiary truncate">— {q.desc}</span>}
             </div>
-            {q.desc && <p className="text-[11px] text-[#a3a3a3] mb-3 sm:hidden">{q.desc}</p>}
+            {q.desc && <p className="text-[11px] text-text-tertiary mb-3 sm:hidden">{q.desc}</p>}
             {q.type === "select" ? (
               <div className="relative max-w-md">
                 <select value={String(val ?? "")} onChange={(e) => onChange(q.key, e.target.value)}
-                  className="w-full text-sm h-10 px-3.5 rounded-lg border border-[#e8e8e8] bg-white focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10 outline-none transition-all text-[#171717] appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%23737373%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22M6%208l4%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.625rem_center] bg-no-repeat pr-9">
+                  className="w-full text-sm h-10 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-9">
                   <option value="" disabled>请选择</option>
                   {(O[q.key] || []).map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
@@ -229,20 +227,19 @@ function QuestionItem({ q, val, onChange, index }: { q: Q; val: unknown; onChang
               <div className="relative max-w-xs">
                 <input type="number" value={Number(val ?? 0)} onChange={(e) => onChange(q.key, Number(e.target.value))}
                   min={q.min} max={q.max} step={q.step}
-                  className="w-full text-sm h-10 px-3.5 rounded-lg border border-[#e8e8e8] bg-white focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10 outline-none transition-all text-[#171717]" />
-                {q.unit && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-[#a3a3a3] pointer-events-none font-medium">{q.unit}</span>}
+                  className="w-full text-sm h-10 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary" />
+                {q.unit && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] text-text-tertiary pointer-events-none font-medium">{q.unit}</span>}
               </div>
             )}
-            {/* Quick hint dots for select fields */}
             {q.type === "select" && O[q.key] && (
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {O[q.key].slice(0, 5).map((opt) => (
                   <button key={opt} onClick={() => onChange(q.key, opt)}
                     className={cn(
-                      "text-[10px] px-2.5 py-1 rounded-full border transition-all",
+                      "text-[10px] px-3 py-1 rounded-full border transition-all",
                       val === opt
-                        ? "bg-[#0d9488] text-white border-[#0d9488]"
-                        : "bg-white text-[#a3a3a3] border-[#e8e8e8] hover:border-[#0d9488] hover:text-[#0d9488]"
+                        ? "bg-sage-300/80 text-white border-sage-300"
+                        : "bg-white/50 text-text-tertiary border-sage-200/50 hover:border-sage-300 hover:text-sage-600"
                     )}>
                     {opt}
                   </button>
@@ -256,7 +253,7 @@ function QuestionItem({ q, val, onChange, index }: { q: Q; val: unknown; onChang
   );
 }
 
-// ─── Main Page ───
+// ─── Home ───
 export default function Home() {
   const [input, setInput] = useState<UserInput>(defaultInput);
   const [step, setStep] = useState(0);
@@ -264,7 +261,6 @@ export default function Home() {
 
   const result = useMemo<InsuranceResult>(() => calculate(input), [input]);
   const handle = useCallback((k: string, v: unknown) => setInput((p) => setN(p, k, v)), []);
-
   const goTo = (s: number) => { setDir(s > step ? 1 : -1); setStep(s); };
 
   const gapData = useMemo(() => [
@@ -280,37 +276,39 @@ export default function Home() {
   const LABELS = ["欢迎", "家庭信息", "财务状况", "健康险", "寿险", "养老金", "结果"];
 
   return (
-    <div className="min-h-screen bg-[#f8f7f4] flex flex-col">
+    <div className="min-h-screen relative overflow-hidden">
+      {/* 背景氛围光晕 */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full" style={{ background: 'radial-gradient(circle, rgba(168,181,162,0.15) 0%, transparent 70%)', animation: 'softGlow 8s ease-in-out infinite' }} />
+        <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full" style={{ background: 'radial-gradient(circle, rgba(216,203,184,0.12) 0%, transparent 70%)', animation: 'softGlow 10s ease-in-out infinite 2s' }} />
+      </div>
+
       {/* ─── Header ─── */}
-      <header className="sticky top-0 z-50 bg-white/80 border-b border-[#e8e8e8]">
-        <div className="max-w-3xl mx-auto px-5 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-[#0d9488] flex items-center justify-center shrink-0">
-              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <header className="sticky top-0 z-50 glass border-b border-white/30">
+        <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-sage-300/80 flex items-center justify-center shrink-0">
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
             </div>
-            <span className="text-sm font-semibold text-[#171717]">家庭保险配置</span>
+            <span className="text-sm font-semibold text-text-primary font-display">家庭保险配置</span>
           </div>
-          <span className="text-[11px] text-[#a3a3a3] font-medium">{step + 1} / 7</span>
+          <span className="text-xs text-text-tertiary font-medium">{step + 1} / 7</span>
         </div>
-        {/* Progress bar */}
-        <div className="h-0.5 bg-[#e8e8e8]">
-          <motion.div className="h-full bg-[#0d9488]" initial={false} animate={{ width: `${(step / 6) * 100}%` }} transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }} />
+        <div className="h-0.5 bg-sage-100">
+          <motion.div className="h-full bg-sage-300" initial={false} animate={{ width: `${(step / 6) * 100}%` }} transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }} />
         </div>
-        {/* Step labels */}
-        <div className="max-w-3xl mx-auto px-5 py-2 flex justify-between overflow-x-auto gap-1">
+        <div className="max-w-4xl mx-auto px-6 py-2 flex justify-between overflow-x-auto gap-1">
           {LABELS.map((l, i) => (
             <button key={l} onClick={() => i <= step && goTo(i)}
-              className={cn("text-[10px] font-medium whitespace-nowrap transition-colors", i === step ? "text-[#0d9488]" : i < step ? "text-[#0d9488]/60 hover:text-[#0d9488]" : "text-[#d4d4d4] cursor-default")}>
-              {l}
-            </button>
+              className={cn("text-[10px] font-medium whitespace-nowrap transition-colors", i === step ? "text-sage-500" : i < step ? "text-sage-400/60 hover:text-sage-500" : "text-sage-200 cursor-default")}>{l}</button>
           ))}
         </div>
       </header>
 
       <div className="flex-1 flex flex-col">
-        <div className="flex-1 max-w-3xl mx-auto w-full px-5 py-8">
+        <div className="flex-1 max-w-4xl mx-auto w-full px-6 py-8">
           <AnimatePresence mode="wait" custom={dir}>
             <motion.div key={step} custom={dir} variants={{
               enter: (d: number) => ({ x: d > 0 ? 320 : -320, opacity: 0 }),
@@ -318,50 +316,84 @@ export default function Home() {
               exit: (d: number) => ({ x: d > 0 ? -320 : 320, opacity: 0 }),
             }} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }} className="w-full">
 
-              {/* ═══ Welcome (0) ═══ */}
+              {/* ═══ Welcome / Hero (0) ═══ */}
               {step === 0 && (
-                <div className="min-h-[65vh] flex flex-col items-center justify-center text-center px-4">
-                  <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}>
-                    <div className="w-20 h-20 rounded-[28px] bg-gradient-to-br from-[#0d9488] to-[#0f766e] flex items-center justify-center mx-auto mb-8 shadow-xl shadow-[#0d9488]/25">
-                      <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                      </svg>
+                <div className="min-h-[80vh] flex items-center">
+                  <div className="w-full grid lg:grid-cols-2 gap-16 items-center">
+                    {/* 左侧内容 */}
+                    <div className="space-y-8">
+                      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sage-50/80 backdrop-blur-md border border-sage-100/50">
+                        <span className="w-2 h-2 rounded-full bg-sage-400 animate-pulse" />
+                        <span className="text-sm text-text-secondary">家庭保障顾问系统</span>
+                      </motion.div>
+                      <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.7 }} className="text-4xl lg:text-5xl font-display font-medium tracking-tight text-text-primary leading-tight">
+                        为家庭建立<br /><span className="text-sage-500">更安心的</span>保障结构
+                      </motion.h1>
+                      <motion.p initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.7 }} className="text-base text-text-secondary leading-relaxed max-w-md">
+                        基于家庭收入、责任与生命周期，生成更适合你的保障方案。
+                      </motion.p>
+                      <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.7 }} className="flex items-center gap-4 pt-4">
+                        <motion.button onClick={() => goTo(1)} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                          className="px-10 py-3.5 rounded-button bg-sage-300/80 hover:bg-sage-300 text-text-primary font-medium border border-white/30 transition-all duration-300 hover:shadow-[0_8px_25px_rgba(168,181,162,0.15)] text-base">
+                          开始家庭评估
+                        </motion.button>
+                        <motion.button onClick={() => goTo(6)} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                          className="px-8 py-3.5 rounded-button bg-transparent hover:bg-white/30 text-text-secondary font-medium border border-white/30 transition-all duration-300 text-base">
+                          了解更多 →
+                        </motion.button>
+                      </motion.div>
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="flex items-center gap-6 pt-8 text-xs text-text-tertiary">
+                        <span className="flex items-center gap-2"><svg className="w-4 h-4 text-sage-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>隐私安全保护</span>
+                        <span className="flex items-center gap-2"><svg className="w-4 h-4 text-sage-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>专业顾问支持</span>
+                      </motion.div>
                     </div>
-                  </motion.div>
-                  <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.5 }} className="text-[32px] font-bold text-[#171717] tracking-tight">家庭保险配置决策工具</motion.h1>
-                  <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.5 }} className="text-[#737373] text-sm mt-4 max-w-sm leading-relaxed">
-                    基于精算模型，科学评估家庭保障需求，<br />为您量身定制最优保险配置方案。
-                  </motion.p>
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }} className="flex items-center gap-3 mt-6 text-[#a3a3a3] text-xs">
-                    <span className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5 text-[#0d9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>5 步填写</span>
-                    <span className="w-1 h-1 rounded-full bg-[#d4d4d4]" />
-                    <span className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5 text-[#0d9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>实时测算</span>
-                    <span className="w-1 h-1 rounded-full bg-[#d4d4d4]" />
-                    <span className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5 text-[#0d9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>科学配置</span>
-                  </motion.div>
-                  <motion.button onClick={() => goTo(1)} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 0.4 }}
-                    className="mt-10 px-10 py-3.5 bg-[#0d9488] text-white text-sm font-semibold rounded-xl hover:bg-[#0f766e] transition-all shadow-lg shadow-[#0d9488]/25 active:scale-[0.97]">
-                    开始配置 →
-                  </motion.button>
+
+                    {/* 右侧视觉 — 浮动卡片 */}
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.3 }} className="relative hidden lg:block">
+                      <div className="absolute inset-0 rounded-full opacity-20 blur-3xl" style={{ background: 'radial-gradient(circle, rgba(168,181,162,0.3) 0%, rgba(216,203,184,0.2) 50%, transparent 70%)' }} />
+                      <div className="relative space-y-6">
+                        <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }} className="glass rounded-card p-6 border border-white/50 shadow-lg max-w-sm ml-auto">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-sage-50 flex items-center justify-center">
+                              <svg className="w-6 h-6 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                            </div>
+                            <div><div className="text-sm font-medium text-text-primary">家庭保障评分</div><div className="text-2xl font-display text-sage-600">87</div></div>
+                          </div>
+                        </motion.div>
+                        <motion.div animate={{ y: [0, 10, 0] }} transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 1 }} className="glass rounded-card p-6 border border-white/50 shadow-lg max-w-sm">
+                          <div className="space-y-3">
+                            <div className="text-sm text-text-secondary">保障覆盖率</div>
+                            <div className="w-full h-2 rounded-full bg-sage-100">
+                              <motion.div initial={{ width: 0 }} animate={{ width: '78%' }} transition={{ duration: 2, delay: 0.5 }} className="h-full rounded-full bg-sage-400" />
+                            </div>
+                            <div className="text-right text-sm text-sage-600 font-medium">78%</div>
+                          </div>
+                        </motion.div>
+                        <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2 }} className="glass rounded-card p-6 border border-white/50 shadow-lg max-w-sm ml-12">
+                          <div className="flex justify-between items-center">
+                            <div><div className="text-sm text-text-secondary">推荐年保费</div><div className="text-xl font-display text-text-primary mt-1">¥18,500</div></div>
+                            <div className="w-16 h-16 rounded-full border-4 border-sage-200 flex items-center justify-center"><span className="text-sm font-medium text-sage-600">2.4x</span></div>
+                          </div>
+                        </motion.div>
+                      </div>
+                    </motion.div>
+                  </div>
                 </div>
               )}
 
               {/* ═══ Input Pages (1-5, special case step 3) ═══ */}
               {step >= 1 && step <= 5 && step !== 3 && (
-                <div>
-                  {/* Page header */}
-                  <div className="flex items-center gap-3 mb-7">
-                    <div className="w-10 h-10 rounded-xl bg-[#f0fdfa] flex items-center justify-center">
-                      <svg className="w-5 h-5 text-[#0d9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor" dangerouslySetInnerHTML={{ __html: PAGE_ICONS[step - 1] }} />
+                <div className="max-w-2xl mx-auto">
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-8">
+                    <div className="w-11 h-11 rounded-xl bg-sage-50 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" dangerouslySetInnerHTML={{ __html: PAGE_ICONS[step - 1] }} />
                     </div>
                     <div>
-                      <h1 className="text-lg font-bold text-[#171717]">{PAGES[step - 1].title}</h1>
-                      <p className="text-xs text-[#a3a3a3]">{PAGES[step - 1].subtitle}</p>
+                      <h1 className="text-xl font-bold text-text-primary font-display">{PAGES[step - 1].title}</h1>
+                      <p className="text-xs text-text-tertiary">{PAGES[step - 1].subtitle}</p>
                     </div>
-                  </div>
-
-                  {/* Questions */}
-                  <div className="space-y-3">
+                  </motion.div>
+                  <div className="space-y-4">
                     {PAGES[step - 1].questions.map((q, i) => (
                       <QuestionItem key={q.key} q={q} val={(input as unknown as Record<string, unknown>)[q.key]} onChange={handle} index={i} />
                     ))}
@@ -371,46 +403,45 @@ export default function Home() {
 
               {/* ═══ Health Insurance Table (step 3) ═══ */}
               {step === 3 && (
-                <div>
-                  <div className="flex items-center gap-3 mb-7">
-                    <div className="w-10 h-10 rounded-xl bg-[#f0fdfa] flex items-center justify-center">
-                      <svg className="w-5 h-5 text-[#0d9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor" dangerouslySetInnerHTML={{ __html: PAGE_ICONS[2] }} />
+                <div className="max-w-2xl mx-auto">
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-8">
+                    <div className="w-11 h-11 rounded-xl bg-sage-50 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" dangerouslySetInnerHTML={{ __html: PAGE_ICONS[2] }} />
                     </div>
                     <div>
-                      <h1 className="text-lg font-bold text-[#171717]">健康险配置</h1>
-                      <p className="text-xs text-[#a3a3a3]">勾选家庭成员已有的健康险，勾选后可填写详细信息</p>
+                      <h1 className="text-xl font-bold text-text-primary font-display">健康险配置</h1>
+                      <p className="text-xs text-text-tertiary">勾选家庭成员已有的健康险，勾选后可填写详细信息</p>
                     </div>
-                  </div>
+                  </motion.div>
 
-                  {/* Table */}
-                  <div className="bg-white rounded-xl border border-[#e8e8e8] overflow-x-auto">
+                  <div className="glass rounded-card overflow-hidden border border-white/50">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-[#e8e8e8] bg-[#fafafa]">
-                          <th className="text-left px-4 py-3 text-xs font-semibold text-[#737373]">险种</th>
+                        <tr className="border-b border-sage-100 bg-sage-50/50">
+                          <th className="text-left px-5 py-3.5 text-xs font-semibold text-text-secondary">险种</th>
                           {MEMBERS.map((m) => (
-                            <th key={m.key} className="px-3 py-3 text-xs font-semibold text-[#737373] text-center">{m.label}</th>
+                            <th key={m.key} className="px-3 py-3.5 text-xs font-semibold text-text-secondary text-center">{m.label}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {HI_TYPES.map((type, ti) => (
-                          <tr key={type} className="border-b border-[#e8e8e8] last:border-0">
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: HI_COLORS[ti] }} />
-                                <span className="text-sm font-medium text-[#171717]">{type}</span>
+                          <tr key={type} className="border-b border-sage-100/50 last:border-0">
+                            <td className="px-5 py-3.5">
+                              <div className="flex items-center gap-2.5">
+                                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: HI_COLORS[ti] }} />
+                                <span className="text-sm font-medium text-text-primary">{type}</span>
                               </div>
                             </td>
                             {MEMBERS.map((m) => {
                               const fieldKey = `${m.key}_${type}` as keyof typeof input;
                               const checked = Boolean(input[fieldKey] ?? false);
                               return (
-                                <td key={m.key} className="px-3 py-3 text-center">
+                                <td key={m.key} className="px-3 py-3.5 text-center">
                                   <label className="inline-flex items-center justify-center cursor-pointer">
                                     <input type="checkbox" checked={checked}
                                       onChange={(e) => handle(fieldKey, e.target.checked)}
-                                      className="w-4 h-4 rounded border-[#d4d4d4] text-[#0d9488] focus:ring-[#0d9488]/20 cursor-pointer" />
+                                      className="w-4 h-4 rounded border-sage-300 text-sage-500 focus:ring-sage-300/30 cursor-pointer" />
                                   </label>
                                 </td>
                               );
@@ -421,13 +452,12 @@ export default function Home() {
                     </table>
                   </div>
 
-                  {/* Detail forms for checked items */}
+                  {/* Detail forms */}
                   <div className="mt-5 space-y-4">
                     {MEMBERS.map((m) => {
                       const hasAny = HI_TYPES.some((t) => Boolean(input[`${m.key}_${t}` as keyof typeof input]));
                       if (!hasAny) return null;
                       const checkedTypes = HI_TYPES.filter((t) => Boolean(input[`${m.key}_${t}` as keyof typeof input]));
-                      const label = m.label;
                       const ciKey = m.key === 'p1' ? 'firstPersonCIExisting' as const
                         : m.key === 'p2' ? 'secondPersonCIExisting' as const
                         : m.key === 'child' ? 'childCIExisting' as const
@@ -438,29 +468,29 @@ export default function Home() {
                         : 'parentMIExisting' as const;
                       return (
                         <motion.div key={m.key} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-                          className="bg-white rounded-xl border border-[#e8e8e8] p-5">
-                          <h3 className="text-sm font-semibold text-[#171717] mb-3">{label} - 已勾选险种详情</h3>
+                          className="glass rounded-card p-6">
+                          <h3 className="text-sm font-semibold text-text-primary mb-3">{m.label} — 已勾选险种详情</h3>
                           <div className="flex flex-wrap gap-2 mb-3">
                             {checkedTypes.map((t) => (
-                              <span key={t} className="text-[11px] px-2.5 py-1 rounded-full bg-[#f0fdfa] text-[#0d9488] font-medium border border-[#ccfbf1]">{t}</span>
+                              <span key={t} className="text-[11px] px-3 py-1 rounded-full bg-sage-50 text-sage-600 font-medium border border-sage-200/50">{t}</span>
                             ))}
                           </div>
                           {(checkedTypes.includes('重疾险') || checkedTypes.includes('百万医疗') || checkedTypes.includes('中端医疗') || checkedTypes.includes('高端医疗')) && (
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                               {checkedTypes.includes('重疾险') && (
                                 <div>
-                                  <label className="text-[11px] font-medium text-[#737373] mb-1 block">已有重疾险保额（万元）</label>
+                                  <label className="text-[11px] font-medium text-text-tertiary mb-1 block">已有重疾险保额（万元）</label>
                                   <input type="number" value={Number(input[ciKey] ?? 0)} min={0}
                                     onChange={(e) => handle(ciKey, Number(e.target.value))}
-                                    className="w-full text-sm h-9 px-3 rounded-lg border border-[#e8e8e8] focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10 outline-none" />
+                                    className="w-full text-sm h-9 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none" />
                                 </div>
                               )}
                               {(checkedTypes.includes('百万医疗') || checkedTypes.includes('中端医疗') || checkedTypes.includes('高端医疗')) && (
                                 <div>
-                                  <label className="text-[11px] font-medium text-[#737373] mb-1 block">已有医疗险保额（万元）</label>
+                                  <label className="text-[11px] font-medium text-text-tertiary mb-1 block">已有医疗险保额（万元）</label>
                                   <input type="number" value={Number(input[miKey] ?? 0)} min={0}
                                     onChange={(e) => handle(miKey, Number(e.target.value))}
-                                    className="w-full text-sm h-9 px-3 rounded-lg border border-[#e8e8e8] focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10 outline-none" />
+                                    className="w-full text-sm h-9 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none" />
                                 </div>
                               )}
                             </div>
@@ -470,11 +500,11 @@ export default function Home() {
                     })}
                   </div>
 
-                  {/* Budget Section */}
+                  {/* Budget */}
                   <div className="mt-5">
-                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-xl border border-[#e8e8e8] p-5">
-                      <h3 className="text-sm font-semibold text-[#171717] mb-4">保费预算设置</h3>
-                      <p className="text-[11px] text-[#a3a3a3] mb-4">如果不了解具体费用，请选择预算范围，系统将自动按中间值计算</p>
+                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-card p-6">
+                      <h3 className="text-sm font-semibold text-text-primary mb-3">保费预算设置</h3>
+                      <p className="text-[11px] text-text-tertiary mb-4">如果不了解具体费用，请选择预算范围，系统将自动按中间值计算</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {[
                           { label: "第一支柱重疾险年预算", ciKey: "firstPersonCIPremiumBudget", miKey: "firstPersonMIPremiumBudget" },
@@ -482,18 +512,18 @@ export default function Home() {
                         ].map((item) => (
                           <div key={item.ciKey} className="space-y-2">
                             <div>
-                              <label className="text-[11px] font-medium text-[#737373] mb-1 block">{item.label.replace("重疾险", "")}重疾险年预算</label>
+                              <label className="text-[11px] font-medium text-text-tertiary mb-1 block">{item.label.replace("重疾险", "")}重疾险年预算</label>
                               <select value={Object.entries(BUDGET_CI).find(([, v]) => v === Number(input[item.ciKey as keyof typeof input]))?.[0] || "3-5万"}
                                 onChange={(e) => handle(item.ciKey, BUDGET_CI[e.target.value] ?? 4)}
-                                className="w-full text-sm h-9 px-3 rounded-lg border border-[#e8e8e8] bg-white focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10 outline-none">
+                                className="w-full text-sm h-9 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none">
                                 {Object.keys(BUDGET_CI).map((o) => <option key={o} value={o}>{o}</option>)}
                               </select>
                             </div>
                             <div>
-                              <label className="text-[11px] font-medium text-[#737373] mb-1 block">{item.label.replace("重疾险", "")}医疗险年预算</label>
+                              <label className="text-[11px] font-medium text-text-tertiary mb-1 block">{item.label.replace("重疾险", "")}医疗险年预算</label>
                               <select value={Object.entries(BUDGET_MI).find(([, v]) => v === Number(input[item.miKey as keyof typeof input]))?.[0] || "1-3万"}
                                 onChange={(e) => handle(item.miKey, BUDGET_MI[e.target.value] ?? 2)}
-                                className="w-full text-sm h-9 px-3 rounded-lg border border-[#e8e8e8] bg-white focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10 outline-none">
+                                className="w-full text-sm h-9 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none">
                                 {Object.keys(BUDGET_MI).map((o) => <option key={o} value={o}>{o}</option>)}
                               </select>
                             </div>
@@ -507,76 +537,83 @@ export default function Home() {
 
               {/* ═══ Result (6) ═══ */}
               {step === 6 && (
-                <div className="space-y-5">
-                  <div className="mb-4">
-                    <h1 className="text-lg font-bold text-[#171717]">您的保险配置方案</h1>
-                    <p className="text-xs text-[#a3a3a3] mt-1">基于填写信息生成的个性化建议</p>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="max-w-4xl mx-auto space-y-6">
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-2">
+                    <h1 className="text-2xl font-bold text-text-primary font-display">您的保险配置方案</h1>
+                    <p className="text-sm text-text-tertiary mt-1">基于填写信息生成的个性化建议</p>
+                  </motion.div>
+
+                  {/* 概览卡片 */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <StatCard label="总保障缺口" value={`${result.totalGap.toFixed(0)} 万元`} trend={result.totalGap > 100 ? "bad" : result.totalGap > 30 ? "neutral" : "good"} />
                     <StatCard label="健康险缺口" value={`${result.totalHealthGap.toFixed(0)} 万元`} trend={result.totalHealthGap > 50 ? "bad" : "good"} />
                     <StatCard label="寿险缺口" value={`${result.totalLifeGap.toFixed(0)} 万元`} trend={result.totalLifeGap > 50 ? "bad" : "good"} />
                     <StatCard label="风险等级" value={result.riskLevel} trend={result.riskLevel === "低风险" ? "good" : result.riskLevel === "中等风险" ? "neutral" : "bad"} />
                     <StatCard label="年度总保费" value={`${result.totalAnnualPrem.toFixed(1)} 万元`} trend={result.totalAnnualPrem > 20 ? "bad" : "neutral"} />
                   </div>
-                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-xl border border-[#e8e8e8] p-4 flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-[#ccfbf1] flex items-center justify-center shrink-0">
-                      <svg className="w-4 h-4 text-[#0d9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+
+                  {/* 配置优先级提示 */}
+                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-card p-5 flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-sage-50 flex items-center justify-center shrink-0">
+                      <svg className="w-5 h-5 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
                     </div>
-                    <div><div className="text-sm font-semibold text-[#171717]">配置优先级</div><div className="text-sm text-[#737373] mt-0.5">{result.priority}</div></div>
+                    <div><div className="text-sm font-semibold text-text-primary">配置优先级</div><div className="text-sm text-text-secondary mt-0.5">{result.priority}</div></div>
                   </motion.div>
+
+                  {/* 缺口图表 */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="bg-white rounded-xl border border-[#e8e8e8] p-5">
-                      <h3 className="text-[13px] font-semibold text-[#171717] mb-4">保障缺口概览</h3>
-                      <div className="h-56"><ResponsiveContainer width="100%" height="100%"><BarChart data={gapData} barSize={28}><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#737373" }} /><YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#a3a3a3" }} /><Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e8e8e8" }} /><Bar dataKey="重疾险缺口" fill={C.blue} radius={[4, 4, 0, 0]} /><Bar dataKey="医疗险缺口" fill={C.emerald} radius={[4, 4, 0, 0]} /><Bar dataKey="寿险缺口" fill={C.amber} radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div>
+                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="glass rounded-card p-6">
+                      <h3 className="text-sm font-semibold text-text-primary mb-4">保障缺口概览</h3>
+                      <div className="h-56"><ResponsiveContainer width="100%" height="100%"><BarChart data={gapData} barSize={28}><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#8B948E" }} /><YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#8B948E" }} /><Tooltip contentStyle={{ borderRadius: 16, border: "1px solid rgba(255,255,255,0.5)", backdropFilter: "blur(20px)" }} /><Bar dataKey="重疾险缺口" fill={C.blue} radius={[6, 6, 0, 0]} /><Bar dataKey="医疗险缺口" fill={C.sage} radius={[6, 6, 0, 0]} /><Bar dataKey="寿险缺口" fill={C.warm} radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer></div>
                     </motion.div>
-                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white rounded-xl border border-[#e8e8e8] p-5">
-                      <h3 className="text-[13px] font-semibold text-[#171777] mb-4">建议保费结构</h3>
-                      <div className="h-56 flex items-center justify-center">{pieData.length > 0 ? <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} dataKey="value" paddingAngle={3}>{pieData.map((_, i) => <Cell key={i} fill={CC[i % CC.length]} />)}</Pie><Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e8e8e8" }} /></PieChart></ResponsiveContainer> : <span className="text-sm text-[#a3a3a3]">暂无数据</span>}</div>
+                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass rounded-card p-6">
+                      <h3 className="text-sm font-semibold text-text-primary mb-4">建议保费结构</h3>
+                      <div className="h-56 flex items-center justify-center">{pieData.length > 0 ? <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} dataKey="value" paddingAngle={3}>{pieData.map((_, i) => <Cell key={i} fill={CC[i % CC.length]} />)}</Pie><Tooltip contentStyle={{ borderRadius: 16, border: "1px solid rgba(255,255,255,0.5)" }} /></PieChart></ResponsiveContainer> : <span className="text-sm text-text-tertiary">暂无数据</span>}</div>
                     </motion.div>
                   </div>
-                  {/* ═══ 医疗险推荐（基于收入+已有保障） ═══ */}
-                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="bg-white rounded-xl border border-[#e8e8e8] p-5">
-                    <div className="flex items-center gap-2.5 mb-4">
-                      <div className="w-7 h-7 rounded-lg bg-[#f0fdfa] flex items-center justify-center">
-                        <svg className="w-4 h-4 text-[#0d9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+
+                  {/* 医疗险推荐 */}
+                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="glass rounded-card p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 rounded-lg bg-sage-50 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
                       </div>
-                      <h3 className="text-sm font-semibold text-[#171717]">医疗险推荐方案</h3>
+                      <h3 className="text-sm font-semibold text-text-primary">医疗险推荐方案</h3>
                     </div>
-                    <p className="text-[11px] text-[#a3a3a3] mb-4">根据您的收入水平和已有保障，按行业标准推荐的医疗险类型</p>
+                    <p className="text-xs text-text-tertiary mb-4">根据您的收入水平和已有保障，按行业标准推荐的医疗险类型</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {[
                         { label: "第一经济支柱", income: input.firstPersonIncome, rec: result.firstPerson.recommendedMIType },
                         { label: "第二经济支柱", income: input.secondPersonIncome, rec: result.secondPerson.recommendedMIType },
                       ].map((p) => (
-                        <div key={p.label} className="bg-[#fafafa] rounded-lg p-4 border border-[#e8e8e8]">
-                          <div className="text-xs font-semibold text-[#171717] mb-2">{p.label}</div>
-                          <div className="space-y-1.5 text-xs text-[#737373]">
-                            <div className="flex justify-between"><span>年收入</span><span className="font-medium text-[#171717]">{p.income}</span></div>
-                            <div className="flex justify-between"><span>推荐配置</span><span className="font-medium text-[#0d9488]">{p.rec}</span></div>
+                        <div key={p.label} className="bg-sage-50/60 rounded-xl p-4 border border-sage-100/50">
+                          <div className="text-xs font-semibold text-text-primary mb-2">{p.label}</div>
+                          <div className="space-y-1.5 text-xs text-text-secondary">
+                            <div className="flex justify-between"><span>年收入</span><span className="font-medium text-text-primary">{p.income}</span></div>
+                            <div className="flex justify-between"><span>推荐配置</span><span className="font-medium text-sage-600">{p.rec}</span></div>
                           </div>
                         </div>
                       ))}
                     </div>
                   </motion.div>
 
-                  {/* ═══ 年度保费汇总表 ═══ */}
-                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="bg-white rounded-xl border border-[#e8e8e8] p-5">
-                    <div className="flex items-center gap-2.5 mb-4">
-                      <div className="w-7 h-7 rounded-lg bg-[#f0fdfa] flex items-center justify-center">
-                        <svg className="w-4 h-4 text-[#0d9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  {/* 年度保费汇总表 */}
+                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="glass rounded-card p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 rounded-lg bg-sage-50 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       </div>
-                      <h3 className="text-sm font-semibold text-[#171717]">年度保费预计</h3>
+                      <h3 className="text-sm font-semibold text-text-primary">年度保费预计</h3>
                     </div>
-                    <p className="text-[11px] text-[#a3a3a3] mb-4">按推荐方案计算的年度总保费，单位：万元/年</p>
+                    <p className="text-xs text-text-tertiary mb-4">按推荐方案计算的年度总保费，单位：万元/年</p>
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="border-b border-[#e8e8e8] bg-[#fafafa]">
-                            <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#737373]">险种</th>
-                            <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#737373]">第一支柱</th>
-                            <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#737373]">第二支柱</th>
-                            <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#0d9488]">合计</th>
+                          <tr className="border-b border-sage-100 bg-sage-50/50">
+                            <th className="text-left px-4 py-2.5 text-xs font-semibold text-text-secondary">险种</th>
+                            <th className="text-right px-4 py-2.5 text-xs font-semibold text-text-secondary">第一支柱</th>
+                            <th className="text-right px-4 py-2.5 text-xs font-semibold text-text-secondary">第二支柱</th>
+                            <th className="text-right px-4 py-2.5 text-xs font-semibold text-sage-500">合计</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -600,58 +637,60 @@ export default function Home() {
                             const totalAll = totalP1 + totalP2;
                             return <>
                               {rows.map((r) => (
-                                <tr key={r.l} className="border-b border-[#f0f0f0]">
-                                  <td className="px-4 py-2.5 text-sm text-[#525252]">{r.l}</td>
-                                  <td className="px-4 py-2.5 text-sm text-right text-[#171717] font-medium">{r.p1 > 0 ? r.p1.toFixed(2) : '-'}</td>
-                                  <td className="px-4 py-2.5 text-sm text-right text-[#171717] font-medium">{r.p2 > 0 ? r.p2.toFixed(2) : '-'}</td>
-                                  <td className="px-4 py-2.5 text-sm text-right text-[#0d9488] font-bold">{(r.p1 + r.p2) > 0 ? (r.p1 + r.p2).toFixed(2) : '-'}</td>
+                                <tr key={r.l} className="border-b border-sage-100/50">
+                                  <td className="px-4 py-2.5 text-sm text-text-secondary">{r.l}</td>
+                                  <td className="px-4 py-2.5 text-sm text-right text-text-primary font-medium">{r.p1 > 0 ? r.p1.toFixed(2) : '-'}</td>
+                                  <td className="px-4 py-2.5 text-sm text-right text-text-primary font-medium">{r.p2 > 0 ? r.p2.toFixed(2) : '-'}</td>
+                                  <td className="px-4 py-2.5 text-sm text-right text-sage-600 font-bold">{(r.p1 + r.p2) > 0 ? (r.p1 + r.p2).toFixed(2) : '-'}</td>
                                 </tr>
                               ))}
-                              <tr className="bg-[#fafafa]">
-                                <td className="px-4 py-2.5 text-sm font-bold text-[#171717]">合计</td>
-                                <td className="px-4 py-2.5 text-sm text-right font-bold text-[#171717]">{totalP1.toFixed(2)}</td>
-                                <td className="px-4 py-2.5 text-sm text-right font-bold text-[#171717]">{totalP2.toFixed(2)}</td>
-                                <td className="px-4 py-2.5 text-sm text-right font-bold text-[#0d9488]">{totalAll.toFixed(2)}</td>
+                              <tr className="bg-sage-50/30">
+                                <td className="px-4 py-2.5 text-sm font-bold text-text-primary">合计</td>
+                                <td className="px-4 py-2.5 text-sm text-right font-bold text-text-primary">{totalP1.toFixed(2)}</td>
+                                <td className="px-4 py-2.5 text-sm text-right font-bold text-text-primary">{totalP2.toFixed(2)}</td>
+                                <td className="px-4 py-2.5 text-sm text-right font-bold text-sage-600">{totalAll.toFixed(2)}</td>
                               </tr>
                             </>;
                           })()}
                         </tbody>
                       </table>
                     </div>
-                    <div className="mt-3 flex items-center gap-2 text-xs text-[#737373] bg-[#fafafa] rounded-lg px-4 py-2.5">
+                    <div className="mt-3 flex items-center gap-2 text-xs text-text-tertiary bg-sage-50/60 rounded-xl px-4 py-3">
                       <span>保费/收入比：</span>
-                      <span className="font-bold text-[#171717]">{result.premiumToIncomeRatio.toFixed(2)}</span>
-                      <span className="text-[#a3a3a3]">（</span>
-                      <span className={result.premiumToIncomeRatio < 1 ? "text-emerald-600 font-semibold" : result.premiumToIncomeRatio <= 3 ? "text-amber-500 font-semibold" : "text-rose-500 font-semibold"}>{result.riskLevel}</span>
-                      <span className="text-[#a3a3a3]"> — &lt;1 低风险，1-3 中风险，&gt;3 高风险）</span>
+                      <span className="font-bold text-text-primary">{result.premiumToIncomeRatio.toFixed(2)}</span>
+                      <span className={result.premiumToIncomeRatio < 1 ? "text-sage-600 font-semibold" : result.premiumToIncomeRatio <= 3 ? "text-amber-500 font-semibold" : "text-rose-400 font-semibold"}>{result.riskLevel}</span>
+                      <span className="text-text-tertiary">— &lt;1 低风险，1-3 中风险，&gt;3 高风险</span>
                     </div>
                   </motion.div>
 
+                  {/* 个人支柱 Tabs */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[{ t: "第一经济支柱", r: result.firstPerson, c: "#0d9488" }, { t: "第二经济支柱", r: result.secondPerson, c: "#2563eb" }].map((p) => (
-                      <motion.div key={p.t} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-xl border border-[#e8e8e8] p-5">
-                        <h3 className="text-sm font-semibold text-[#171717] mb-3">{p.t}</h3>
+                    {[{ t: "第一经济支柱", r: result.firstPerson, c: C.sage }, { t: "第二经济支柱", r: result.secondPerson, c: C.sageDark }].map((p) => (
+                      <motion.div key={p.t} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-card p-6">
+                        <h3 className="text-sm font-semibold text-text-primary mb-3">{p.t}</h3>
                         <PersonTabs result={p.r as unknown as Record<string, unknown>} color={p.c} />
                       </motion.div>
                     ))}
                   </div>
+
+                  {/* 子女 & 父母 */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[{ title: "子女配置建议", color: C.purple, items: [
                       { l: "建议重疾险保额", v: `${result.child.recommendedCICoverage} 万元` }, { l: "重疾险缺口", v: `${result.child.ciGap} 万元`, t: result.child.ciGap > 0 ? "bad" as const : "good" as const }, { l: "建议医疗险类型", v: result.child.recommendedMIType }, { l: "建议意外险保额", v: `${result.child.recommendedAccidentCoverage} 万元` }, { l: "配置优先级", v: result.child.priority }, { l: "寿险建议", v: result.child.lifeConclusion }, { l: "养老金建议", v: result.child.pensionBudgetResult },
                     ]}, { title: "父母配置建议", color: C.amber, items: [
                       { l: "建议重疾险保额", v: `${result.parent.recommendedCICoverage} 万元` }, { l: "重疾险缺口", v: `${result.parent.ciGap} 万元`, t: result.parent.ciGap > 0 ? "bad" as const : "good" as const }, { l: "建议医疗险类型", v: result.parent.recommendedMIType }, { l: "建议意外险保额", v: result.parent.recommendedAccidentCoverage }, { l: "配置优先级", v: result.parent.priority }, { l: "寿险建议", v: result.parent.lifeConclusion }, { l: "养老金建议", v: result.parent.pensionBudgetResult },
                     ]}].map((card) => (
-                      <motion.div key={card.title} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-xl border border-[#e8e8e8] p-5">
-                        <h3 className="text-sm font-semibold text-[#171717] mb-4 flex items-center gap-2">
+                      <motion.div key={card.title} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-card p-6">
+                        <h3 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
                           <span className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: `${card.color}15` }}>
                             <svg className="w-3.5 h-3.5" style={{ color: card.color }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197" /></svg>
                           </span>
                           {card.title}
                         </h3>
                         {card.items.map((item) => (
-                          <div key={item.l} className="flex justify-between items-center py-2 border-b border-[#f0f0f0] last:border-0">
-                            <span className="text-sm text-[#525252]">{item.l}</span>
-                            <span className={cn("text-sm font-semibold", item.t === "bad" ? "text-rose-500" : item.t === "good" ? "text-emerald-600" : "text-[#171717]")}>{item.v}</span>
+                          <div key={item.l} className="flex justify-between items-center py-2 border-b border-sage-100 last:border-0">
+                            <span className="text-sm text-text-secondary">{item.l}</span>
+                            <span className={cn("text-sm font-semibold", item.t === "bad" ? "text-rose-400" : item.t === "good" ? "text-sage-600" : "text-text-primary")}>{item.v}</span>
                           </div>
                         ))}
                       </motion.div>
@@ -664,22 +703,24 @@ export default function Home() {
         </div>
 
         {/* ─── Bottom Nav ─── */}
-        <div className="border-t border-[#e8e8e8] bg-white">
-          <div className="max-w-3xl mx-auto px-5 py-4 flex items-center justify-between">
-            <button onClick={() => goTo(step - 1)} disabled={step === 0}
-              className={cn("px-5 py-2 text-sm font-medium rounded-lg transition-all", step === 0 ? "text-[#d4d4d4] cursor-not-allowed" : "text-[#737373] hover:text-[#171717] hover:bg-[#f5f5f5]")}>
+        <div className="border-t border-white/30 glass">
+          <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+            <motion.button onClick={() => goTo(step - 1)} disabled={step === 0}
+              whileHover={step > 0 ? { scale: 1.02 } : {}}
+              className={cn("px-6 py-2.5 text-sm font-medium rounded-button transition-all", step === 0 ? "text-sage-200 cursor-not-allowed" : "text-text-secondary hover:bg-white/30")}>
               ← 上一步
-            </button>
+            </motion.button>
             <div className="flex gap-2">
               {[0, 1, 2, 3, 4, 5, 6].map((i) => (
                 <button key={i} onClick={() => i <= step && goTo(i)}
-                  className={cn("w-2 h-2 rounded-full transition-all duration-300", i === step ? "bg-[#0d9488] scale-125" : i < step ? "bg-[#0d9488]/40" : "bg-[#e8e8e8]")} />
+                  className={cn("w-2 h-2 rounded-full transition-all duration-300", i === step ? "bg-sage-400 scale-125" : i < step ? "bg-sage-300/60" : "bg-sage-200/50")} />
               ))}
             </div>
-            <button onClick={() => goTo(step + 1)} disabled={step === 6}
-              className={cn("px-5 py-2 text-sm font-medium rounded-lg transition-all", step === 6 ? "text-[#d4d4d4] cursor-not-allowed" : "bg-[#0d9488] text-white hover:bg-[#0f766e] active:scale-[0.97]")}>
+            <motion.button onClick={() => goTo(step + 1)} disabled={step === 6}
+              whileHover={step < 6 ? { scale: 1.02 } : {}}
+              className={cn("px-6 py-2.5 text-sm font-medium rounded-button transition-all", step === 6 ? "text-sage-200 cursor-not-allowed" : "bg-sage-300/80 text-text-primary hover:bg-sage-300 hover:shadow-[0_8px_25px_rgba(168,181,162,0.15)]")}>
               {step === 0 ? "开始配置 →" : step === 5 ? "查看结果 →" : "下一步 →"}
-            </button>
+            </motion.button>
           </div>
         </div>
       </div>

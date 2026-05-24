@@ -1,24 +1,55 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-primary: #0d9488;
-  --color-primary-light: #ccfbf1;
-  --color-primary-dark: #0f766e;
-  --color-surface: #f8f7f4;
-  --color-card: #ffffff;
-  --color-border: #e5e5e5;
-  --color-text-primary: #171717;
-  --color-text-secondary: #737373;
-  --color-text-tertiary: #a3a3a3;
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --color-sage-50: #F3F5F2;
+  --color-sage-100: #E7ECE8;
+  --color-sage-200: #D1DBD3;
+  --color-sage-300: #A8B5A2;
+  --color-sage-400: #8FA089;
+  --color-sage-500: #6F8072;
+  --color-sage-600: #5A6B5E;
+  --color-sage-700: #465549;
+  --color-warm-50: #F8F6F2;
+  --color-warm-100: #F3F0E9;
+  --color-warm-200: #E8E2D5;
+  --color-warm-300: #D8CBB8;
+  --color-warm-400: #C4B59E;
+  --color-warm-500: #B0A088;
+  --color-text-primary: #2F3430;
+  --color-text-secondary: #66706A;
+  --color-text-tertiary: #8B948E;
+  --color-glass: rgba(255,255,255,0.72);
+  --color-glass-soft: rgba(255,255,255,0.45);
+  --radius-card: 28px;
+  --radius-button: 999px;
+  --radius-input: 24px;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-display: "Inter", sans-serif;
+  --animate-fade-up: fadeUp 0.6s ease-out;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-soft-glow: softGlow 3s ease-in-out infinite;
+}
+
+@keyframes fadeUp {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes softGlow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.8; }
 }
 
 body {
-  background: #f8f7f4;
-  color: #171717;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: linear-gradient(180deg, #F8F6F2 0%, #F3F6F2 100%);
+  color: #2F3430;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
 }
 
 input[type="number"]::-webkit-inner-spin-button,
@@ -29,7 +60,7 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] { -moz-appearance: textfield; }
 
 select {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23737373' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2366706A' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   background-position: right 0.625rem center;
   background-repeat: no-repeat;
   background-size: 1.25rem;
@@ -39,6 +70,14 @@ select {
 }
 
 .glass {
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.5);
+}
+
+.glass-soft {
+  background: rgba(255,255,255,0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
