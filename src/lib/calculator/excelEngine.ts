@@ -94,19 +94,25 @@ export const Excel = {
       '15-30万', 22.5,
       '30-60万', 45,
       '60-100万', 80,
-      '100万以上', 120,
+      '100-300万', 200,
+      '300-500万', 400,
+      '500-1000万', 750,
+      '1000万以上', 1200,
       '0'
     );
   },
 
-  // 第二经济支柱收入转化（注意：B6=100万以上 映射为 120，但保险决策表B9中第二个MAX公式用150）
+  // 第二经济支柱收入转化（注意：100万以上 映射不同值）
   getIncomeForLife(val: string): number {
     return this.SWITCH(val,
       '15万以下', 7.5,
       '15-30万', 22.5,
       '30-60万', 45,
       '60-100万', 80,
-      '100万以上', 150,
+      '100-300万', 200,
+      '300-500万', 400,
+      '500-1000万', 750,
+      '1000万以上', 1500,
       '0'
     );
   },
@@ -189,7 +195,11 @@ export const Excel = {
       '5万以下', 3,
       '5-20万', 12.5,
       '20-50万', 35,
-      '50万以上', 60,
+      '50-100万', 75,
+      '100-300万', 200,
+      '300-500万', 400,
+      '500-1000万', 750,
+      '1000万以上', 1500,
       0
     );
   },
@@ -233,6 +243,36 @@ export const Excel = {
       0
     );
   },
+
+  /** 收入弹性系数（用于医疗成本测算） */
+  getIncomeElasticity(income: string): number {
+    return this.SWITCH(income,
+      '15万以下', 0.25,
+      '15-30万', 0.4,
+      '30-60万', 0.75,
+      '60-100万', 0.75,
+      '100-300万', 1.0,
+      '300-500万', 1.2,
+      '500-1000万', 1.5,
+      '1000万以上', 1.8,
+      0.75
+    );
+  },
+
+  /** 医疗费用封顶系数 */
+  getMedicalCapKmax(income: string): number {
+    return this.SWITCH(income,
+      '15万以下', 3,
+      '15-30万', 3,
+      '30-60万', 3,
+      '60-100万', 3,
+      '100-300万', 4,
+      '300-500万', 5,
+      '500-1000万', 6,
+      '1000万以上', 7,
+      3
+    );
+  },
 };
 
 // ====== 辅助函数 ======
@@ -249,9 +289,9 @@ export function getJobStabilityFactor(stability: string): number {
 
 /** Excel L8 = CHOOSE(MATCH(D6,...),...) + CHOOSE(MATCH(D7,...),...) */
 export function getLiquidAsset(deposit: string, investment: string): number {
-  const depArr = ['5万以下', '5-20万', '20-50万', '50万以上'];
+  const depArr = ['5万以下', '5-20万', '20-50万', '50-100万', '100-300万', '300-500万', '500-1000万', '1000万以上'];
   const invArr = ['无', '5万以内', '5-20万', '20-50万', '50万以上'];
-  const depVal = Excel.CHOOSE(Excel.MATCH(deposit, depArr), 2.5, 12.5, 35, 70);
+  const depVal = Excel.CHOOSE(Excel.MATCH(deposit, depArr), 2.5, 12.5, 35, 75, 200, 400, 750, 1500);
   const invVal = Excel.CHOOSE(Excel.MATCH(investment, invArr), 0, 2.5, 12.5, 35, 70);
   return depVal + invVal;
 }

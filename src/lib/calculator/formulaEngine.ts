@@ -2,6 +2,35 @@ import { Excel, getJobStabilityFactor, getLiquidAsset } from './excelEngine';
 import { UserInput, CalculatedParams, InsuranceResult } from './types';
 
 /**
+ * 根据已有健康险组合，推荐下一级医疗险类型
+ * 优先级：高端医疗 > 中端医疗 > 百万医疗 > 惠民保 > 社保医保
+ */
+function recommendNextMIType(hasSiShe: boolean, hasHuiMin: boolean, hasBaiWan: boolean, hasZhongDuan: boolean, hasGaoDuan: boolean, income: string): string {
+  // 如果有高端医疗 → 已配置齐全
+  if (hasGaoDuan) return '已配置高端医疗';
+  // 如果有中端医疗 → 推荐升级到高端医疗
+  if (hasZhongDuan) return '高端医疗';
+  // 如果有百万医疗 → 推荐升级到中端医疗
+  if (hasBaiWan) return '中端医疗';
+  // 已有惠民保 → 推荐百万医疗
+  if (hasHuiMin) return '百万医疗';
+  // 仅有社保或全无 → 根据收入推荐
+  if (income === '15万以下' || income === '15-30万') return '百万医疗';
+  if (income === '30-60万' || income === '60-100万') return '中端医疗';
+  // 高收入人群直接推荐高端医疗
+  return '高端医疗';
+}
+
+/**
+ * 根据收入水平推荐医疗险类型（结果页用）
+ */
+function recommendMITypeByIncome(income: string): string {
+  if (income === '15万以下' || income === '15-30万') return '百万医疗';
+  if (income === '30-60万' || income === '60-100万') return '中端医疗';
+  return '高端医疗';
+}
+
+/**
  * ========================================
  *  Excel → JavaScript 公式映射引擎
  * ========================================
@@ -73,19 +102,15 @@ export function calculate(input: UserInput): InsuranceResult {
   // I9 same
   const baseMedicalCost2 = baseMedicalCost1;
 
-  // H10 = IF(B5="15万以下",0.25,IF(B5="15-30万",0.4,IF(B5="100万以上",1.5,0.75)))
-  const incomeElasticity1 = input.firstPersonIncome === '15万以下' ? 0.25
-    : input.firstPersonIncome === '15-30万' ? 0.4
-    : input.firstPersonIncome === '100万以上' ? 1.5 : 0.75;
+  // H10 = getIncomeElasticity(B5)
+  const incomeElasticity1 = Excel.getIncomeElasticity(input.firstPersonIncome);
   // I10
-  const incomeElasticity2 = input.secondPersonIncome === '15万以下' ? 0.25
-    : input.secondPersonIncome === '15-30万' ? 0.4
-    : input.secondPersonIncome === '100万以上' ? 1.5 : 0.75;
+  const incomeElasticity2 = Excel.getIncomeElasticity(input.secondPersonIncome);
 
-  // H11 = IF(B5="100万以上",5,3)
-  const medicalCapKmax1 = input.firstPersonIncome === '100万以上' ? 5 : 3;
+  // H11 = getMedicalCapKmax(B5)
+  const medicalCapKmax1 = Excel.getMedicalCapKmax(input.firstPersonIncome);
   // I11
-  const medicalCapKmax2 = input.secondPersonIncome === '100万以上' ? 5 : 3;
+  const medicalCapKmax2 = Excel.getMedicalCapKmax(input.secondPersonIncome);
 
   // H12 = MIN(H9+L1*H10, H11*H9)
   const medicalCost1 = Math.min(
@@ -188,9 +213,11 @@ export function calculate(input: UserInput): InsuranceResult {
   // B7 = B4 + B6
   const totalHealthGap1 = Math.round((ciGapOut1 + miGapOut1) * 100) / 100;
 
-  // D3 = IF(B14="社保医保","百万医疗",IF(B14="百万医疗","中端医疗","无"))
-  const recMIType1 = input.firstPersonHealthIns === '社保医保' ? '百万医疗'
-    : input.firstPersonHealthIns === '百万医疗' ? '中端医疗' : '无';
+  // D3 = recommendNextMIType(基于新版多选勾选)
+  const recMIType1 = recommendNextMIType(
+    input.p1_社保医保, input.p1_惠民保, input.p1_百万医疗,
+    input.p1_中端医疗, input.p1_高端医疗, input.firstPersonIncome
+  );
   // D4 = B4 * H25
   const estCIPrem1 = Math.round(ciGapOut1 * kpremium1 * 100) / 100;
   // D5 (固定值 0.1)
@@ -290,9 +317,11 @@ export function calculate(input: UserInput): InsuranceResult {
   // B22 = I17 + I24
   const totalHealthGap2 = Math.round((ciGapOut2 + miGapOut2) * 100) / 100;
 
-  // D18 = IF(B15="社保医保","百万医疗",IF(B15="百万医疗","意外险","无"))
-  const recMIType2 = input.secondPersonHealthIns === '社保医保' ? '百万医疗'
-    : input.secondPersonHealthIns === '百万医疗' ? '意外险' : '无';
+  // D18 = recommendNextMIType(基于新版多选勾选)
+  const recMIType2 = recommendNextMIType(
+    input.p2_社保医保, input.p2_惠民保, input.p2_百万医疗,
+    input.p2_中端医疗, input.p2_高端医疗, input.secondPersonIncome
+  );
   // D19 = B19 * I25
   const estCIPrem2 = Math.round(ciGapOut2 * kpremium2 * 100) / 100;
   // D20 (固定值 0.08)
@@ -374,9 +403,11 @@ export function calculate(input: UserInput): InsuranceResult {
   const childCIGap = Math.max(0, childCIRec - childCIExist);
   // B36 = D22
   const childCITerm = input.childCIPremiumBudget;
-  // D33 = IF(B16="社保医保","百万医疗", IF(B16="百万医疗","意外险","无"))
-  const childMIType = input.childHealthIns === '社保医保' ? '百万医疗'
-    : input.childHealthIns === '百万医疗' ? '意外险' : '无';
+  // D33 = recommendNextMIType(基于子女勾选)
+  const childMIType = recommendNextMIType(
+    input.child_社保医保, input.child_惠民保, input.child_百万医疗,
+    input.child_中端医疗, input.child_高端医疗, '15万以下'
+  );
   // D34 = E22
   const childMITerm = input.childMIPremiumBudget;
   // D35 = 20（固定值）
@@ -409,13 +440,19 @@ export function calculate(input: UserInput): InsuranceResult {
   const parentCIExist = input.parentCIExisting;
   const parentCIGap = Math.max(0, parentCIRec - parentCIExist);
   const parentCITerm = input.parentCIPremiumBudget;
-  // D47 = IF(B16="社保医保","防癌医疗险/惠民保",IF(B16="防癌医疗险/惠民保","中端/高端医疗险","无"))
-  // Excel uses B16 (child health insurance) per the original formula reference
-  const parentMIType = input.childHealthIns === '社保医保'
-    ? '防癌医疗险/惠民保'
-    : input.childHealthIns === '防癌医疗险/惠民保'
-      ? '中端/高端医疗险'
-      : '无';
+  // D47 = recommendNextMIType(基于父母勾选，父母推荐偏稳健)
+  const parentMIType = recommendNextMIType(
+    input.parent_社保医保, input.parent_惠民保, input.parent_百万医疗,
+    input.parent_中端医疗, input.parent_高端医疗, '15-30万'
+  );
+
+  // 如果是父母，惠民保/防癌医疗险也是好选择
+  const parentRecommendedMI = input.parent_高端医疗 ? '已配置高端医疗'
+    : input.parent_中端医疗 ? '高端医疗'
+    : input.parent_百万医疗 ? '中端医疗'
+    : input.parent_惠民保 ? '百万医疗'
+    : input.parent_社保医保 ? '防癌医疗险/惠民保'
+    : '防癌医疗险/惠民保';
   const parentMITerm = input.parentMIPremiumBudget;
   const parentAccident = '20/人';
   const parentPriority = '医疗+意外为主';
@@ -532,7 +569,7 @@ export function calculate(input: UserInput): InsuranceResult {
       existingCICoverage: parentCIExist,
       ciGap: parentCIGap,
       ciTerm: parentCITerm,
-      recommendedMIType: parentMIType,
+      recommendedMIType: parentRecommendedMI,
       miTerm: parentMITerm,
       recommendedAccidentCoverage: parentAccident,
       priority: parentPriority,

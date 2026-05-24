@@ -19,38 +19,71 @@ export interface UserInput {
   annualExpense: string;         // D8 - 家庭年度刚性开销(下拉)
   city: string;                  // D9 - 家庭居住城市(下拉)
 
-  // 健康险输入
+  // ===== 健康险输入（新版：表格式多选） =====
+  // 第一支柱 - 各险种勾选
+  p1_社保医保: boolean;
+  p1_惠民保: boolean;
+  p1_百万医疗: boolean;
+  p1_中端医疗: boolean;
+  p1_高端医疗: boolean;
+  p1_重疾险: boolean;
+  // 第二支柱
+  p2_社保医保: boolean;
+  p2_惠民保: boolean;
+  p2_百万医疗: boolean;
+  p2_中端医疗: boolean;
+  p2_高端医疗: boolean;
+  p2_重疾险: boolean;
+  // 子女
+  child_社保医保: boolean;
+  child_惠民保: boolean;
+  child_百万医疗: boolean;
+  child_中端医疗: boolean;
+  child_高端医疗: boolean;
+  child_重疾险: boolean;
+  // 父母
+  parent_社保医保: boolean;
+  parent_惠民保: boolean;
+  parent_百万医疗: boolean;
+  parent_中端医疗: boolean;
+  parent_高端医疗: boolean;
+  parent_重疾险: boolean;
+
+  // 各家庭成员的重疾险已有保额（万元）
+  firstPersonCIExisting: number; // C14
+  secondPersonCIExisting: number;// C15
+  childCIExisting: number;       // C16
+  parentCIExisting: number;      // C17
+
+  // 各家庭成员的医疗险已有保额（万元）
+  firstPersonMIExisting: number; // D14
+  secondPersonMIExisting: number;// D15
+  childMIExisting: number;       // D16
+  parentMIExisting: number;      // D17
+
+  // 旧版兼容字段（字符串单选保留，但不推荐使用）
   firstPersonHealthIns: string;  // B14
   secondPersonHealthIns: string; // B15
   childHealthIns: string;        // B16
   parentHealthIns: string;       // B17
 
-  firstPersonCIExisting: number; // C14 - 现有重疾险保额
-  secondPersonCIExisting: number;// C15
-  childCIExisting: number;       // C16
-  parentCIExisting: number;      // C17
+  // 预算（万元）
+  firstPersonCIPremiumBudget: number;
+  secondPersonCIPremiumBudget: number;
+  childCIPremiumBudget: number;
+  parentCIPremiumBudget: number;
+  firstPersonMIPremiumBudget: number;
+  secondPersonMIPremiumBudget: number;
+  childMIPremiumBudget: number;
+  parentMIPremiumBudget: number;
 
-  firstPersonMIExisting: number; // D14 - 现有医疗险保额
-  secondPersonMIExisting: number;// D15
-  childMIExisting: number;       // D16
-  parentMIExisting: number;      // D17
-
-  // 个性化需求
   parentAge: string;             // A19
   parentHealth: string;          // A20
-  firstPersonCIPremiumBudget: number; // D20 - 重疾险年度保费预算(万元)
-  secondPersonCIPremiumBudget: number;// D21
-  childCIPremiumBudget: number;      // D22
-  parentCIPremiumBudget: number;     // D23
-  firstPersonMIPremiumBudget: number;// E20 - 医疗险保费预算(万元)
-  secondPersonMIPremiumBudget: number;// E21
-  childMIPremiumBudget: number;      // E22
-  parentMIPremiumBudget: number;     // E23
 
-  firstPersonHighEndMI: boolean;  // 第一经济支柱可选高端医疗险
-  secondPersonHighEndMI: boolean; // 第二经济支柱可选高端医疗险
-  elderHighEndMI: boolean;        // 老年人可选高端医疗险
-  childHighEndMI: boolean;        // 子女可选高端医疗险
+  firstPersonHighEndMI: boolean;  // 保留向后兼容
+  secondPersonHighEndMI: boolean;
+  elderHighEndMI: boolean;
+  childHighEndMI: boolean;
 
   // 寿险输入
   firstPersonLifeIns: string;    // B28

@@ -34,21 +34,33 @@ const I = {
 
 const PAGE_ICONS = [I.user, I.wallet, I.heart, I.bolt, I.clock];
 
+// ─── Budget Preset Mappings ───
+const BUDGET_CI: Record<string, number> = { "1万以下": 0.5, "1-3万": 2, "3-5万": 4, "5-10万": 7.5, "10万以上": 12 };
+const BUDGET_MI: Record<string, number> = { "0.5万以下": 0.25, "0.5-1万": 0.75, "1-3万": 2, "3-5万": 4, "5万以上": 6 };
+
+// Health insurance type labels
+const HI_TYPES = ["社保医保", "惠民保", "百万医疗", "中端医疗", "高端医疗", "重疾险"] as const;
+const HI_COLORS = ["#0d9488", "#8b5cf6", "#3b82f6", "#f59e0b", "#f43f5e", "#06b6d4"];
+const MEMBERS = [
+  { key: "p1", label: "第一支柱" },
+  { key: "p2", label: "第二支柱" },
+  { key: "child", label: "子女" },
+  { key: "parent", label: "父母" },
+] as const;
+
 // ─── Options ───
 const O: Record<string, string[]> = {
-  firstPersonIncome: ["15万以下", "15-30万", "30-60万", "60-100万", "100万以上"],
-  secondPersonIncome: ["15万以下", "15-30万", "30-60万", "60-100万", "100万以上"],
+  firstPersonIncome: ["15万以下", "15-30万", "30-60万", "60-100万", "100-300万", "300-500万", "500-1000万", "1000万以上"],
+  secondPersonIncome: ["15万以下", "15-30万", "30-60万", "60-100万", "100-300万", "300-500万", "500-1000万", "1000万以上"],
   incomeStability: ["非常稳定（公务员/国企/事业单位）", "较稳定（大型企业核心岗）", "一般（中小企/绩效占比高）", "不稳定（自由职业/创业/销售）"],
   mortgageBalance: ["大于等于100万", "大于等于50万小于100万", "无房贷"],
   otherLoanAmount: ["20万以内", "10-20万", "20-50万", "50万以上", "无其他贷款"],
-  bankDeposit: ["5万以下", "5-20万", "20-50万", "50万以上"],
+  bankDeposit: ["5万以下", "5-20万", "20-50万", "50-100万", "100-300万", "300-500万", "500-1000万", "1000万以上"],
   lowRiskInvestment: ["无", "5万以内", "5-20万", "20-50万", "50万以上"],
   annualExpense: ["5万以下", "5-10万", "10-20万", "20-50万", "50万以上"],
   city: ["北上深", "二线城市", "普通地级市", "县城"],
-  firstPersonHealthIns: ["社保医保", "百万医疗", "中端医疗", "高端医疗", "无"],
-  secondPersonHealthIns: ["社保医保", "百万医疗", "中端医疗", "高端医疗", "无"],
-  childHealthIns: ["社保医保", "百万医疗", "中端医疗", "高端医疗", "无"],
-  parentHealthIns: ["社保医保", "百万医疗", "中端医疗", "高端医疗", "无"],
+  ciBudget: ["1万以下", "1-3万", "3-5万", "5-10万", "10万以上"],
+  miBudget: ["0.5万以下", "0.5-1万", "1-3万", "3-5万", "5万以上"],
   childParentLifeIns: ["都不需要", "仅子女", "仅父母", "都需要"],
   firstPersonLifeCoverage: ["无", "30万以内", "30-50万", "50万以内", "50-100万", "100-200万", "200万以上", "不清楚"],
   secondPersonLifeCoverage: ["无", "30万以内", "30-50万", "50万以内", "50-100万", "100-200万", "200万以上", "不清楚"],
@@ -91,22 +103,9 @@ const PAGES: PG[] = [
   },
   {
     title: "健康险配置",
-    subtitle: "您和家人的健康保障现状",
+    subtitle: "勾选家庭成员已有的健康险，勾选后可填写详细信息",
     questions: [
-      { key: "firstPersonHealthIns", label: "第一经济支柱的健康险类型", icon: I.heart, type: "select" },
-      { key: "secondPersonHealthIns", label: "第二经济支柱的健康险类型", icon: I.heart, type: "select" },
-      { key: "childHealthIns", label: "子女的健康险类型", icon: I.heart, type: "select" },
-      { key: "parentHealthIns", label: "父母的健康险类型", icon: I.heart, type: "select" },
-      { key: "firstPersonCIExisting", label: "第一支柱已有重疾险保额", desc: "已配置的重疾险总额", icon: I.shield, type: "number", unit: "万元", min: 0 },
-      { key: "secondPersonCIExisting", label: "第二支柱已有重疾险保额", icon: I.shield, type: "number", unit: "万元", min: 0 },
-      { key: "childCIExisting", label: "子女已有重疾险保额", icon: I.shield, type: "number", unit: "万元", min: 0 },
-      { key: "parentCIExisting", label: "父母已有重疾险保额", icon: I.shield, type: "number", unit: "万元", min: 0 },
-      { key: "firstPersonMIExisting", label: "第一支柱已有医疗险保额", icon: I.heart, type: "number", unit: "万元", min: 0 },
-      { key: "secondPersonMIExisting", label: "第二支柱已有医疗险保额", icon: I.heart, type: "number", unit: "万元", min: 0 },
-      { key: "firstPersonCIPremiumBudget", label: "第一支柱重疾险年预算", desc: "每年愿意投入重疾险的保费", icon: I.wallet, type: "number", unit: "万元/年", min: 0, step: 0.1 },
-      { key: "secondPersonCIPremiumBudget", label: "第二支柱重疾险年预算", icon: I.wallet, type: "number", unit: "万元/年", min: 0, step: 0.1 },
-      { key: "firstPersonMIPremiumBudget", label: "第一支柱医疗险年预算", icon: I.wallet, type: "number", unit: "万元/年", min: 0, step: 0.1 },
-      { key: "secondPersonMIPremiumBudget", label: "第二支柱医疗险年预算", icon: I.wallet, type: "number", unit: "万元/年", min: 0, step: 0.1 },
+      // 健康险表格式多选 - 使用专用渲染
     ],
   },
   {
@@ -345,8 +344,8 @@ export default function Home() {
                 </div>
               )}
 
-              {/* ═══ Input Pages (1-5) ═══ */}
-              {step >= 1 && step <= 5 && (
+              {/* ═══ Input Pages (1-5, special case step 3) ═══ */}
+              {step >= 1 && step <= 5 && step !== 3 && (
                 <div>
                   {/* Page header */}
                   <div className="flex items-center gap-3 mb-7">
@@ -364,6 +363,142 @@ export default function Home() {
                     {PAGES[step - 1].questions.map((q, i) => (
                       <QuestionItem key={q.key} q={q} val={(input as unknown as Record<string, unknown>)[q.key]} onChange={handle} index={i} />
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ═══ Health Insurance Table (step 3) ═══ */}
+              {step === 3 && (
+                <div>
+                  <div className="flex items-center gap-3 mb-7">
+                    <div className="w-10 h-10 rounded-xl bg-[#f0fdfa] flex items-center justify-center">
+                      <svg className="w-5 h-5 text-[#0d9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor" dangerouslySetInnerHTML={{ __html: PAGE_ICONS[2] }} />
+                    </div>
+                    <div>
+                      <h1 className="text-lg font-bold text-[#171717]">健康险配置</h1>
+                      <p className="text-xs text-[#a3a3a3]">勾选家庭成员已有的健康险，勾选后可填写详细信息</p>
+                    </div>
+                  </div>
+
+                  {/* Table */}
+                  <div className="bg-white rounded-xl border border-[#e8e8e8] overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-[#e8e8e8] bg-[#fafafa]">
+                          <th className="text-left px-4 py-3 text-xs font-semibold text-[#737373]">险种</th>
+                          {MEMBERS.map((m) => (
+                            <th key={m.key} className="px-3 py-3 text-xs font-semibold text-[#737373] text-center">{m.label}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {HI_TYPES.map((type, ti) => (
+                          <tr key={type} className="border-b border-[#e8e8e8] last:border-0">
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: HI_COLORS[ti] }} />
+                                <span className="text-sm font-medium text-[#171717]">{type}</span>
+                              </div>
+                            </td>
+                            {MEMBERS.map((m) => {
+                              const fieldKey = `${m.key}_${type}` as keyof typeof input;
+                              const checked = Boolean(input[fieldKey] ?? false);
+                              return (
+                                <td key={m.key} className="px-3 py-3 text-center">
+                                  <label className="inline-flex items-center justify-center cursor-pointer">
+                                    <input type="checkbox" checked={checked}
+                                      onChange={(e) => handle(fieldKey, e.target.checked)}
+                                      className="w-4 h-4 rounded border-[#d4d4d4] text-[#0d9488] focus:ring-[#0d9488]/20 cursor-pointer" />
+                                  </label>
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Detail forms for checked items */}
+                  <div className="mt-5 space-y-4">
+                    {MEMBERS.map((m) => {
+                      const hasAny = HI_TYPES.some((t) => Boolean(input[`${m.key}_${t}` as keyof typeof input]));
+                      if (!hasAny) return null;
+                      const checkedTypes = HI_TYPES.filter((t) => Boolean(input[`${m.key}_${t}` as keyof typeof input]));
+                      const label = m.label;
+                      const ciKey = m.key === 'p1' ? 'firstPersonCIExisting' as const
+                        : m.key === 'p2' ? 'secondPersonCIExisting' as const
+                        : m.key === 'child' ? 'childCIExisting' as const
+                        : 'parentCIExisting' as const;
+                      const miKey = m.key === 'p1' ? 'firstPersonMIExisting' as const
+                        : m.key === 'p2' ? 'secondPersonMIExisting' as const
+                        : m.key === 'child' ? 'childMIExisting' as const
+                        : 'parentMIExisting' as const;
+                      return (
+                        <motion.div key={m.key} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                          className="bg-white rounded-xl border border-[#e8e8e8] p-5">
+                          <h3 className="text-sm font-semibold text-[#171717] mb-3">{label} - 已勾选险种详情</h3>
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {checkedTypes.map((t) => (
+                              <span key={t} className="text-[11px] px-2.5 py-1 rounded-full bg-[#f0fdfa] text-[#0d9488] font-medium border border-[#ccfbf1]">{t}</span>
+                            ))}
+                          </div>
+                          {(checkedTypes.includes('重疾险') || checkedTypes.includes('百万医疗') || checkedTypes.includes('中端医疗') || checkedTypes.includes('高端医疗')) && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                              {checkedTypes.includes('重疾险') && (
+                                <div>
+                                  <label className="text-[11px] font-medium text-[#737373] mb-1 block">已有重疾险保额（万元）</label>
+                                  <input type="number" value={Number(input[ciKey] ?? 0)} min={0}
+                                    onChange={(e) => handle(ciKey, Number(e.target.value))}
+                                    className="w-full text-sm h-9 px-3 rounded-lg border border-[#e8e8e8] focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10 outline-none" />
+                                </div>
+                              )}
+                              {(checkedTypes.includes('百万医疗') || checkedTypes.includes('中端医疗') || checkedTypes.includes('高端医疗')) && (
+                                <div>
+                                  <label className="text-[11px] font-medium text-[#737373] mb-1 block">已有医疗险保额（万元）</label>
+                                  <input type="number" value={Number(input[miKey] ?? 0)} min={0}
+                                    onChange={(e) => handle(miKey, Number(e.target.value))}
+                                    className="w-full text-sm h-9 px-3 rounded-lg border border-[#e8e8e8] focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10 outline-none" />
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Budget Section */}
+                  <div className="mt-5">
+                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-xl border border-[#e8e8e8] p-5">
+                      <h3 className="text-sm font-semibold text-[#171717] mb-4">保费预算设置</h3>
+                      <p className="text-[11px] text-[#a3a3a3] mb-4">如果不了解具体费用，请选择预算范围，系统将自动按中间值计算</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {[
+                          { label: "第一支柱重疾险年预算", ciKey: "firstPersonCIPremiumBudget", miKey: "firstPersonMIPremiumBudget" },
+                          { label: "第二支柱重疾险年预算", ciKey: "secondPersonCIPremiumBudget", miKey: "secondPersonMIPremiumBudget" },
+                        ].map((item) => (
+                          <div key={item.ciKey} className="space-y-2">
+                            <div>
+                              <label className="text-[11px] font-medium text-[#737373] mb-1 block">{item.label.replace("重疾险", "")}重疾险年预算</label>
+                              <select value={Object.entries(BUDGET_CI).find(([, v]) => v === Number(input[item.ciKey as keyof typeof input]))?.[0] || "3-5万"}
+                                onChange={(e) => handle(item.ciKey, BUDGET_CI[e.target.value] ?? 4)}
+                                className="w-full text-sm h-9 px-3 rounded-lg border border-[#e8e8e8] bg-white focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10 outline-none">
+                                {Object.keys(BUDGET_CI).map((o) => <option key={o} value={o}>{o}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-[11px] font-medium text-[#737373] mb-1 block">{item.label.replace("重疾险", "")}医疗险年预算</label>
+                              <select value={Object.entries(BUDGET_MI).find(([, v]) => v === Number(input[item.miKey as keyof typeof input]))?.[0] || "1-3万"}
+                                onChange={(e) => handle(item.miKey, BUDGET_MI[e.target.value] ?? 2)}
+                                className="w-full text-sm h-9 px-3 rounded-lg border border-[#e8e8e8] bg-white focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10 outline-none">
+                                {Object.keys(BUDGET_MI).map((o) => <option key={o} value={o}>{o}</option>)}
+                              </select>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
                   </div>
                 </div>
               )}
@@ -397,6 +532,30 @@ export default function Home() {
                       <div className="h-56 flex items-center justify-center">{pieData.length > 0 ? <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} dataKey="value" paddingAngle={3}>{pieData.map((_, i) => <Cell key={i} fill={CC[i % CC.length]} />)}</Pie><Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e8e8e8" }} /></PieChart></ResponsiveContainer> : <span className="text-sm text-[#a3a3a3]">暂无数据</span>}</div>
                     </motion.div>
                   </div>
+                  {/* ═══ 医疗险推荐（基于收入+已有保障） ═══ */}
+                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="bg-white rounded-xl border border-[#e8e8e8] p-5">
+                    <div className="flex items-center gap-2.5 mb-4">
+                      <div className="w-7 h-7 rounded-lg bg-[#f0fdfa] flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#0d9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                      </div>
+                      <h3 className="text-sm font-semibold text-[#171717]">医疗险推荐方案</h3>
+                    </div>
+                    <p className="text-[11px] text-[#a3a3a3] mb-4">根据您的收入水平和已有保障，按行业标准推荐的医疗险类型</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[
+                        { label: "第一经济支柱", income: input.firstPersonIncome, rec: result.firstPerson.recommendedMIType },
+                        { label: "第二经济支柱", income: input.secondPersonIncome, rec: result.secondPerson.recommendedMIType },
+                      ].map((p) => (
+                        <div key={p.label} className="bg-[#fafafa] rounded-lg p-4 border border-[#e8e8e8]">
+                          <div className="text-xs font-semibold text-[#171717] mb-2">{p.label}</div>
+                          <div className="space-y-1.5 text-xs text-[#737373]">
+                            <div className="flex justify-between"><span>年收入</span><span className="font-medium text-[#171717]">{p.income}</span></div>
+                            <div className="flex justify-between"><span>推荐配置</span><span className="font-medium text-[#0d9488]">{p.rec}</span></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[{ t: "第一经济支柱", r: result.firstPerson, c: "#0d9488" }, { t: "第二经济支柱", r: result.secondPerson, c: "#2563eb" }].map((p) => (
                       <motion.div key={p.t} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-xl border border-[#e8e8e8] p-5">
