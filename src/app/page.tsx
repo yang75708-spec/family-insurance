@@ -225,7 +225,7 @@ function QuestionItem({ q, val, onChange, index }: { q: Q; val: unknown; onChang
               </div>
             ) : (
               <div className="relative max-w-xs">
-                <input type="number" value={Number(val ?? 0)} onChange={(e) => onChange(q.key, Number(e.target.value))}
+                <input type="number" value={val === 0 || val === null || val === undefined ? '' : Number(val)} onChange={(e) => onChange(q.key, e.target.value === '' ? 0 : Number(e.target.value))}
                   min={q.min} max={q.max} step={q.step}
                   className="w-full text-sm h-10 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary" />
                 {q.unit && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] text-text-tertiary pointer-events-none font-medium">{q.unit}</span>}
@@ -480,16 +480,16 @@ export default function Home() {
                               {checkedTypes.includes('重疾险') && (
                                 <div>
                                   <label className="text-[11px] font-medium text-text-tertiary mb-1 block">已有重疾险保额（万元）</label>
-                                  <input type="number" value={Number(input[ciKey] ?? 0)} min={0}
-                                    onChange={(e) => handle(ciKey, Number(e.target.value))}
+                                  <input type="number" value={Number(input[ciKey] ?? 0) === 0 ? '' : Number(input[ciKey] ?? 0)} min={0}
+                                    onChange={(e) => handle(ciKey, e.target.value === '' ? 0 : Number(e.target.value))}
                                     className="w-full text-sm h-9 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none" />
                                 </div>
                               )}
                               {(checkedTypes.includes('百万医疗') || checkedTypes.includes('中端医疗') || checkedTypes.includes('高端医疗')) && (
                                 <div>
                                   <label className="text-[11px] font-medium text-text-tertiary mb-1 block">已有医疗险保额（万元）</label>
-                                  <input type="number" value={Number(input[miKey] ?? 0)} min={0}
-                                    onChange={(e) => handle(miKey, Number(e.target.value))}
+                                  <input type="number" value={Number(input[miKey] ?? 0) === 0 ? '' : Number(input[miKey] ?? 0)} min={0}
+                                    onChange={(e) => handle(miKey, e.target.value === '' ? 0 : Number(e.target.value))}
                                     className="w-full text-sm h-9 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none" />
                                 </div>
                               )}
