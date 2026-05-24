@@ -31,6 +31,66 @@ function recommendMITypeByIncome(income: string): string {
 }
 
 /**
+ * 根据健康险勾选计算已有有效医疗保额
+ * 各险种在大陆市场的典型有效保额（万元）
+ */
+function getEffectiveCoverageFromCheckboxes(
+  hasSocial: boolean, hasHuimin: boolean, hasBaiwan: boolean,
+  hasZhongduan: boolean, hasGaoduan: boolean
+): number {
+  let coverage = 0;
+  if (hasGaoduan) coverage = Math.max(coverage, 300);
+  if (hasZhongduan) coverage = Math.max(coverage, 150);
+  if (hasBaiwan) coverage = Math.max(coverage, 80);
+  if (hasHuimin) coverage = Math.max(coverage, 15);
+  if (hasSocial) coverage = Math.max(coverage, 8);
+  return coverage;
+}
+
+/**
+ * 根据年龄、收入水平、推荐医疗险类型估算医疗险年保费（万元）
+ */
+function estimateMIPremium(age: number, income: string, recType: string): number {
+  // 年龄系数
+  const ageFactor = age < 30 ? 1 : age < 40 ? 1.2 : age < 50 ? 1.6 : age < 60 ? 2.5 : 4;
+  // 收入系数
+  const incomeVal = Excel.getIncome(income);
+  const incomeFactor = incomeVal < 22.5 ? 1 : incomeVal < 80 ? 1.1 : incomeVal < 200 ? 1.3 : 1.6;
+  // 各险种基准保费（万元/年，30岁左右）
+  let base: number;
+  if (recType.includes('高端医疗')) base = 1.5;
+  else if (recType.includes('中端医疗')) base = 0.4;
+  else if (recType.includes('百万医疗')) base = 0.05;
+  else if (recType.includes('惠民保')) base = 0.03;
+  else base = 0.03;
+
+  return Math.round(base * ageFactor * incomeFactor * 100) / 100;
+}
+
+/**
+ * 根据子女年龄、城市、家庭收入计算建议重疾险保额（万元）
+ * 行业标准：治疗成本 + 父母收入损失补偿
+ */
+function computeChildCIRecommendation(
+  childAge: number, city: string,
+  income1: number, income2: number
+): number {
+  // 城市基额（万元）
+  const cityBase = city === '北上深' ? 65
+    : city === '二线城市' ? 50
+    : city === '普通地级市' ? 40 : 35;
+  // 家庭收入系数（以家庭均值 45万 为基准 1.0）
+  const familyAvg = (income1 + income2) / 2;
+  const incomeFactor = Math.max(0.7, Math.min(2, familyAvg / 45));
+  // 年龄系数（越小需保障越久）
+  const ageFactor = childAge <= 1 ? 1.2
+    : childAge <= 6 ? 1.0
+    : childAge <= 12 ? 0.9 : 0.8;
+  // 如果有多个子女，分摊保额
+  return Math.max(20, Math.min(100, Math.round(cityBase * incomeFactor * ageFactor)));
+}
+
+/**
  * ========================================
  *  Excel → JavaScript 公式映射引擎
  * ========================================
@@ -144,14 +204,29 @@ export function calculate(input: UserInput): InsuranceResult {
   // I16
   const medicalCoverage2 = Math.min(medicalCost2, citySalary2 * kcap2) * 0.5 * kDir2 * kCity2;
 
-  // H17 = MAX(0, H12 - H16 - D14) — MedicalGap
-  const medicalGap1 = Math.max(0, Math.round((medicalCost1 - medicalCoverage1 - input.firstPersonMIExisting) * 100) / 100);
-  // I17 = MAX(0, I12 - I16 - D15)
-  const medicalGap2 = Math.max(0, Math.round((medicalCost2 - medicalCoverage2 - input.secondPersonMIExisting) * 100) / 100);
+  // 根据勾选的健康险计算已有有效保额
+  const effCoverage1 = getEffectiveCoverageFromCheckboxes(
+    input.p1_社保医保, input.p1_惠民保, input.p1_百万医疗,
+    input.p1_中端医疗, input.p1_高端医疗
+  );
+  const effCoverage2 = getEffectiveCoverageFromCheckboxes(
+    input.p2_社保医保, input.p2_惠民保, input.p2_百万医疗,
+    input.p2_中端医疗, input.p2_高端医疗
+  );
+
+  // H17 = MAX(0, H12 - H16 - MAX(D14, 勾选有效保额)) — MedicalGap
+  const medicalGap1 = Math.max(0, Math.round(
+    (medicalCost1 - medicalCoverage1 - Math.max(input.firstPersonMIExisting, effCoverage1)) * 100
+  ) / 100);
+  // I17 = MAX(0, I12 - I16 - MAX(D15, 勾选有效保额))
+  const medicalGap2 = Math.max(0, Math.round(
+    (medicalCost2 - medicalCoverage2 - Math.max(input.secondPersonMIExisting, effCoverage2)) * 100
+  ) / 100);
 
   // H18 = CHOOSE(MATCH(B7,{...}),0.7,1,1.4,1.6)
   const kjob1 = getJobStabilityFactor(input.incomeStability);
-  const kjob2 = kjob1;
+  // I18 = CHOOSE(MATCH(第二支柱稳定性,{...}),...)
+  const kjob2 = getJobStabilityFactor(input.incomeStability2);
 
   // H19 = IF(B3<30,0.065, IF(B3<40,0.04, IF(B3<50,0.02, 0.005)))
   const incomeGrowthRate1 = input.firstPersonAge < 30 ? 0.065
@@ -220,8 +295,8 @@ export function calculate(input: UserInput): InsuranceResult {
   );
   // D4 = B4 * H25
   const estCIPrem1 = Math.round(ciGapOut1 * kpremium1 * 100) / 100;
-  // D5 (固定值 0.1)
-  const estMIPrem1 = 0.1;
+  // D5 = estimateMIPremium(年龄, 收入, 推荐类型)
+  const estMIPrem1 = estimateMIPremium(input.firstPersonAge, input.firstPersonIncome, recMIType1);
   // D6 = D4 + D5
   const totalHealthPrem1 = Math.round((estCIPrem1 + estMIPrem1) * 100) / 100;
   // D7 = IF(D6 <= (D20+E20), "✅预算充足", "⚠️预算不足")
@@ -324,8 +399,8 @@ export function calculate(input: UserInput): InsuranceResult {
   );
   // D19 = B19 * I25
   const estCIPrem2 = Math.round(ciGapOut2 * kpremium2 * 100) / 100;
-  // D20 (固定值 0.08)
-  const estMIPrem2 = 0.08;
+  // D20 = estimateMIPremium(年龄, 收入, 推荐类型)
+  const estMIPrem2 = estimateMIPremium(input.secondPersonAge, input.secondPersonIncome, recMIType2);
   // D21 = D19 + D20
   const totalHealthPrem2 = Math.round((estCIPrem2 + estMIPrem2) * 100) / 100;
   // D22 = IF(D21 <= (D21+E21), ...)
@@ -395,8 +470,11 @@ export function calculate(input: UserInput): InsuranceResult {
     : '⚠️预算不足，请调整比例或延长缴费期';
 
   // ==================== 子女 ====================
-  // B33 = 80（固定值）
-  const childCIRec = 80;
+  // 子女重疾险推荐额度 = computeChildCIRecommendation(年龄, 城市, 家庭收入)
+  const childCIRec = computeChildCIRecommendation(
+    input.childAge, input.city,
+    incomeConversion1, incomeConversion2
+  );
   // B34 = C16
   const childCIExist = input.childCIExisting;
   // B35 = MAX(0, B33 - B34)
@@ -479,8 +557,18 @@ export function calculate(input: UserInput): InsuranceResult {
   const totalPensionGap = pensionGap1 + pensionGap2;
   const totalGap = Math.round((totalHealthGap + totalLifeGap + totalPensionGap) * 100) / 100;
 
-  const riskLevel = totalGap <= 10 ? '低风险'
-    : totalGap <= 50 ? '中等风险'
+  // 年度总保费（万元，用于风险评级和保费汇总表）
+  const totalAnnualPrem =
+    totalHealthPrem1 + totalHealthPrem2 +
+    estLifePrem1 / 10000 + estLifePrem2 / 10000 +
+    recPension1 / 10000 + recPension2 / 10000;
+  const annualIncome = incomeConversion1 + incomeConversion2;
+  const premiumToIncomeRatio = annualIncome > 0
+    ? Math.round(totalAnnualPrem / annualIncome * 100) / 100
+    : 99;
+
+  const riskLevel = premiumToIncomeRatio < 1 ? '低风险'
+    : premiumToIncomeRatio <= 3 ? '中等风险'
     : '高风险';
 
   const priority = ciGap1 > 30 || ciGap2 > 30 ? '优先配置重疾险'
@@ -495,6 +583,8 @@ export function calculate(input: UserInput): InsuranceResult {
     totalHealthGap,
     totalLifeGap,
     totalPensionGap,
+    totalAnnualPrem: Math.round(totalAnnualPrem * 100) / 100,
+    premiumToIncomeRatio,
     firstPerson: {
       recommendedCICoverage: recCI1,
       ciGap: ciGapOut1,

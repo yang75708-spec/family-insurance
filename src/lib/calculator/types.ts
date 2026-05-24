@@ -5,7 +5,8 @@ export interface UserInput {
   secondPersonAge: number;       // B4
   firstPersonIncome: string;     // B5 - 第一经济支柱年税后收入(下拉)
   secondPersonIncome: string;    // B6
-  incomeStability: string;       // B7 - 家庭收入稳定性(下拉)
+  incomeStability: string;       // B7 - 第一支柱收入稳定性(下拉)
+  incomeStability2: string;      // 第二支柱收入稳定性(下拉)
   childCount: number;            // B8 - 子女人数
   parentSupportCount: number;    // B9 - 赡养父母人数
   childAge: number;              // B10 - 子女当前年龄
@@ -306,6 +307,8 @@ export interface InsuranceResult {
   totalGap: number;
   riskLevel: string;
   priority: string;
+  totalAnnualPrem: number;         // 年度总保费（万元）
+  premiumToIncomeRatio: number;    // 保费/收入比
   firstPerson: PersonInsuranceResult;
   secondPerson: Person2InsuranceResult;
   child: ChildInsuranceResult;

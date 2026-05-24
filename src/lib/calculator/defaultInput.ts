@@ -7,6 +7,7 @@ export const defaultInput: UserInput = {
   firstPersonIncome: '15-30万',
   secondPersonIncome: '15万以下',
   incomeStability: '较稳定（大型企业核心岗）',
+  incomeStability2: '较稳定（大型企业核心岗）',
   childCount: 1,
   parentSupportCount: 2,
   childAge: 3,

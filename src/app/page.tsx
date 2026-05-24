@@ -83,7 +83,8 @@ const PAGES: PG[] = [
       { key: "secondPersonAge", label: "第二经济支柱的年龄是？", icon: I.user, type: "number", unit: "岁", min: 20, max: 70 },
       { key: "firstPersonIncome", label: "第一经济支柱的年税后收入", desc: "影响重疾险保额和寿险需求测算", icon: I.wallet, type: "select" },
       { key: "secondPersonIncome", label: "第二经济支柱的年税后收入", icon: I.wallet, type: "select" },
-      { key: "incomeStability", label: "家庭收入的稳定性如何？", desc: "影响收入增长预期和风险系数", icon: I.chart, type: "select" },
+      { key: "incomeStability", label: "第一经济支柱的职业稳定性", desc: "影响收入增长预期和风险系数", icon: I.chart, type: "select" },
+      { key: "incomeStability2", label: "第二经济支柱的职业稳定性", desc: "影响第二支柱的收入风险系数", icon: I.chart, type: "select" },
       { key: "childCount", label: "有几个子女？", icon: I.baby, type: "number", min: 0, max: 10 },
       { key: "parentSupportCount", label: "需要赡养几位父母？", icon: I.home, type: "number", min: 0, max: 6 },
       { key: "childAge", label: "最小子女的年龄是？", desc: "用于计算教育期保障年限", icon: I.baby, type: "number", unit: "岁", min: 0, max: 22 },
@@ -515,6 +516,7 @@ export default function Home() {
                     <StatCard label="健康险缺口" value={`${result.totalHealthGap.toFixed(0)} 万元`} trend={result.totalHealthGap > 50 ? "bad" : "good"} />
                     <StatCard label="寿险缺口" value={`${result.totalLifeGap.toFixed(0)} 万元`} trend={result.totalLifeGap > 50 ? "bad" : "good"} />
                     <StatCard label="风险等级" value={result.riskLevel} trend={result.riskLevel === "低风险" ? "good" : result.riskLevel === "中等风险" ? "neutral" : "bad"} />
+                    <StatCard label="年度总保费" value={`${result.totalAnnualPrem.toFixed(1)} 万元`} trend={result.totalAnnualPrem > 20 ? "bad" : "neutral"} />
                   </div>
                   <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-xl border border-[#e8e8e8] p-4 flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-[#ccfbf1] flex items-center justify-center shrink-0">
@@ -556,6 +558,74 @@ export default function Home() {
                       ))}
                     </div>
                   </motion.div>
+
+                  {/* ═══ 年度保费汇总表 ═══ */}
+                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="bg-white rounded-xl border border-[#e8e8e8] p-5">
+                    <div className="flex items-center gap-2.5 mb-4">
+                      <div className="w-7 h-7 rounded-lg bg-[#f0fdfa] flex items-center justify-center">
+                        <svg className="w-4 h-4 text-[#0d9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      </div>
+                      <h3 className="text-sm font-semibold text-[#171717]">年度保费预计</h3>
+                    </div>
+                    <p className="text-[11px] text-[#a3a3a3] mb-4">按推荐方案计算的年度总保费，单位：万元/年</p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-[#e8e8e8] bg-[#fafafa]">
+                            <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#737373]">险种</th>
+                            <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#737373]">第一支柱</th>
+                            <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#737373]">第二支柱</th>
+                            <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#0d9488]">合计</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(() => {
+                            const p1CI = result.firstPerson.estimatedCIPremium;
+                            const p1MI = result.firstPerson.estimatedMIPremium;
+                            const p1Life = result.firstPerson.estimatedLifePremium / 10000;
+                            const p1Pension = result.firstPerson.recommendedPensionAnnual / 10000;
+                            const p2CI = result.secondPerson.estimatedCIPremium;
+                            const p2MI = result.secondPerson.estimatedMIPremium;
+                            const p2Life = result.secondPerson.estimatedLifePremium / 10000;
+                            const p2Pension = result.secondPerson.recommendedPensionAnnual / 10000;
+                            const rows = [
+                              { l: "重疾险保费", p1: p1CI, p2: p2CI },
+                              { l: "医疗险保费", p1: p1MI, p2: p2MI },
+                              { l: "寿险保费", p1: p1Life, p2: p2Life },
+                              { l: "养老金年缴", p1: p1Pension, p2: p2Pension },
+                            ];
+                            const totalP1 = rows.reduce((s, r) => s + r.p1, 0);
+                            const totalP2 = rows.reduce((s, r) => s + r.p2, 0);
+                            const totalAll = totalP1 + totalP2;
+                            return <>
+                              {rows.map((r) => (
+                                <tr key={r.l} className="border-b border-[#f0f0f0]">
+                                  <td className="px-4 py-2.5 text-sm text-[#525252]">{r.l}</td>
+                                  <td className="px-4 py-2.5 text-sm text-right text-[#171717] font-medium">{r.p1 > 0 ? r.p1.toFixed(2) : '-'}</td>
+                                  <td className="px-4 py-2.5 text-sm text-right text-[#171717] font-medium">{r.p2 > 0 ? r.p2.toFixed(2) : '-'}</td>
+                                  <td className="px-4 py-2.5 text-sm text-right text-[#0d9488] font-bold">{(r.p1 + r.p2) > 0 ? (r.p1 + r.p2).toFixed(2) : '-'}</td>
+                                </tr>
+                              ))}
+                              <tr className="bg-[#fafafa]">
+                                <td className="px-4 py-2.5 text-sm font-bold text-[#171717]">合计</td>
+                                <td className="px-4 py-2.5 text-sm text-right font-bold text-[#171717]">{totalP1.toFixed(2)}</td>
+                                <td className="px-4 py-2.5 text-sm text-right font-bold text-[#171717]">{totalP2.toFixed(2)}</td>
+                                <td className="px-4 py-2.5 text-sm text-right font-bold text-[#0d9488]">{totalAll.toFixed(2)}</td>
+                              </tr>
+                            </>;
+                          })()}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="mt-3 flex items-center gap-2 text-xs text-[#737373] bg-[#fafafa] rounded-lg px-4 py-2.5">
+                      <span>保费/收入比：</span>
+                      <span className="font-bold text-[#171717]">{result.premiumToIncomeRatio.toFixed(2)}</span>
+                      <span className="text-[#a3a3a3]">（</span>
+                      <span className={result.premiumToIncomeRatio < 1 ? "text-emerald-600 font-semibold" : result.premiumToIncomeRatio <= 3 ? "text-amber-500 font-semibold" : "text-rose-500 font-semibold"}>{result.riskLevel}</span>
+                      <span className="text-[#a3a3a3]"> — &lt;1 低风险，1-3 中风险，&gt;3 高风险）</span>
+                    </div>
+                  </motion.div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[{ t: "第一经济支柱", r: result.firstPerson, c: "#0d9488" }, { t: "第二经济支柱", r: result.secondPerson, c: "#2563eb" }].map((p) => (
                       <motion.div key={p.t} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-xl border border-[#e8e8e8] p-5">
