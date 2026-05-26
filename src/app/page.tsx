@@ -307,7 +307,8 @@ export default function Home() {
 
       {/* ─── Header ─── */}
       <header className="sticky top-0 z-50 glass border-b border-white/30">
-        <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
+        {/* Logo 行 */}
+        <div className="max-w-4xl mx-auto px-6 h-14 flex items-center">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-sage-300/80 flex items-center justify-center shrink-0">
               <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -316,17 +317,32 @@ export default function Home() {
             </div>
             <span className="text-sm font-semibold text-text-primary font-display">家庭保险配置</span>
           </div>
-          <span className="text-xs text-text-tertiary font-medium">{step + 1} / 7</span>
         </div>
-        <div className="h-0.5 bg-sage-100">
-          <motion.div className="h-full bg-sage-300" initial={false} animate={{ width: `${(step / 6) * 100}%` }} transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }} />
-        </div>
-        <div className="max-w-4xl mx-auto px-6 py-2 flex justify-between overflow-x-auto gap-1">
-          {LABELS.map((l, i) => (
-            <button key={l} onClick={() => i <= step && goTo(i)}
-              className={cn("text-[10px] font-medium whitespace-nowrap transition-colors", i === step ? "text-sage-500" : i < step ? "text-sage-400/60 hover:text-sage-500" : "text-sage-200 cursor-default")}>{l}</button>
-          ))}
-        </div>
+        {/* Emoji 进度条 */}
+        <div className="max-w-4xl mx-auto px-6 pb-3 pt-0.5">
+          <div className="flex items-center justify-between">
+            {[
+              { emoji: "🏠", key: "欢迎" },
+              { emoji: "👨‍👩‍👧‍👦", key: "家庭" },
+              { emoji: "💰", key: "财务" },
+              { emoji: "❤️", key: "健康" },
+              { emoji: "🛡️", key: "寿险" },
+              { emoji: "🌴", key: "养老" },
+              { emoji: "✨", key: "结果" },
+            ].map((item, i) => (
+              <div key={item.key} className="flex items-center gap-0 flex-1">
+                <button onClick={() => i <= step && goTo(i)}
+                  className={cn(
+                    "text-base sm:text-lg transition-all duration-300 shrink-0",
+                    i === step ? "opacity-100 scale-110 drop-shadow-sm" : i < step ? "opacity-40 hover:opacity-70 cursor-pointer" : "opacity-15 cursor-default"
+                  )}>{item.emoji}</button>
+                {i < LABELS.length - 1 && (
+                  <div className={cn("flex-1 h-px mx-1.5 transition-colors duration-300", i < step ? "bg-sage-300/50" : "bg-sage-100")} />
+                )}
+                </div>
+              ))}
+            </div>
+          </div>
       </header>
 
       <div className="flex-1 flex flex-col">
