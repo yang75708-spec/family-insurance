@@ -180,7 +180,7 @@ function PersonTabs({ result, color }: { result: Record<string, unknown>; color:
   const panels: Record<string, React.ReactNode> = {
     health: (<><R label="建议重疾险保额" value={`${Number(result.recommendedCICoverage).toFixed(0)} 万元`} /><R label="重疾险缺口" value={`${Number(result.ciGap).toFixed(0)} 万元`} trend={Number(result.ciGap) > 20 ? "bad" : "good"} /><R label="建议医疗险类型" value={String(result.recommendedMIType)} /><R label="医疗险缺口" value={`${Number(result.miGap).toFixed(1)} 万元`} trend={Number(result.miGap) > 10 ? "bad" : "good"} /><R label="重疾险年保费" value={`${Number(result.estimatedCIPremium).toFixed(2)} 万元`} /><R label="预算检验" value={String(result.healthBudgetResult)} trend={String(result.healthBudgetResult).includes("✅") ? "good" : "bad"} /></>),
     life: (<><R label="建议寿险保额" value={`${Number(result.recommendedLifeCoverage).toFixed(0)} 万元`} /><R label="寿险缺口" value={`${Number(result.lifeGap).toFixed(0)} 万元`} trend={Number(result.lifeGap) > 50 ? "bad" : "good"} /><R label="预估年保费" value={`${Number(result.estimatedLifePremium).toFixed(0)} 元`} /><R label="预算检验" value={String(result.lifeBudgetResult)} trend={String(result.lifeBudgetResult).includes("✅") ? "good" : "bad"} /><R label="配置建议" value={String(result.lifeTermSuggestion)} /></>),
-    pension: (<><R label="建议年补充养老金" value={`${Number(result.recommendedPensionAnnual).toFixed(0)} 元`} /><R label="养老金缺口" value={`${Number(result.pensionGap).toFixed(0)} 元`} trend={Number(result.pensionGap) > 50 ? "bad" : "good"} /><R label="已有储备终值" value={`${Number(result.existingPensionFV).toFixed(0)} 元`} /><R label="缴费年限" value={`${Number(result.payYears).toFixed(0)} 年`} /><R label="预算检验" value={String(result.pensionBudgetResult)} trend={String(result.pensionBudgetResult).includes("✅") ? "good" : "bad"} /></>),
+    pension: (<><R label="建议年补充养老金" value={`${Number(result.recommendedPensionAnnual).toFixed(0)} 万元`} /><R label="养老金缺口" value={`${Number(result.pensionGap).toFixed(0)} 万元`} trend={Number(result.pensionGap) > 50 ? "bad" : "good"} /><R label="已有储备终值" value={`${Number(result.existingPensionFV).toFixed(0)} 万元`} /><R label="缴费年限" value={`${Number(result.payYears).toFixed(0)} 年`} /><R label="预算检验" value={String(result.pensionBudgetResult)} trend={String(result.pensionBudgetResult).includes("✅") ? "good" : "bad"} /></>),
   };
   return (
     <div>
@@ -621,11 +621,11 @@ export default function Home() {
                             const p1CI = result.firstPerson.estimatedCIPremium;
                             const p1MI = result.firstPerson.estimatedMIPremium;
                             const p1Life = result.firstPerson.estimatedLifePremium / 10000;
-                            const p1Pension = result.firstPerson.recommendedPensionAnnual / 10000;
+                            const p1Pension = result.firstPerson.recommendedPensionAnnual;
                             const p2CI = result.secondPerson.estimatedCIPremium;
                             const p2MI = result.secondPerson.estimatedMIPremium;
                             const p2Life = result.secondPerson.estimatedLifePremium / 10000;
-                            const p2Pension = result.secondPerson.recommendedPensionAnnual / 10000;
+                            const p2Pension = result.secondPerson.recommendedPensionAnnual;
                             const rows = [
                               { l: "重疾险保费", p1: p1CI, p2: p2CI },
                               { l: "医疗险保费", p1: p1MI, p2: p2MI },
