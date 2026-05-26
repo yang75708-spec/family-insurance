@@ -6,8 +6,8 @@ const MI_TIERS = [
   { id: '社保医保', coverage: 8, premium: 0, label: '社保医保' },
   { id: '惠民保', coverage: 15, premium: 0.008, label: '惠民保' },
   { id: '百万医疗', coverage: 80, premium: 0.05, label: '百万医疗' },
-  { id: '中端医疗', coverage: 150, premium: 0.4, label: '中端医疗' },
-  { id: '高端医疗', coverage: 300, premium: 2, label: '高端医疗' },
+  { id: '中端医疗', coverage: 150, minIncome: 15, premium: 0.4, label: '中端医疗' },
+  { id: '高端医疗', coverage: 300, minIncome: 45, premium: 2, label: '高端医疗' },
 ] as const;
 
 function getCurrentTierIdx(hasSocial: boolean, hasHuimin: boolean, hasBaiwan: boolean, hasZhongduan: boolean, hasGaoduan: boolean): number {
@@ -19,28 +19,44 @@ function getCurrentTierIdx(hasSocial: boolean, hasHuimin: boolean, hasBaiwan: bo
 }
 
 /**
- * 缺口驱动 + 预算检验的医疗险推荐（温馨版）
- * 只关心：保障够不够 → 预算允不允许升级
+ * 医疗险推荐：收入定级 + 缺口驱动 + 预算检验
+ *
+ * 决策树：
+ *   已覆盖 → "已配置完善"
+ *   无商业险 → 百万医疗基础保障
+ *   有缺口 → 找最低够用层级
+ *     ├─ 收入达标 → 预算够升级一级？→ 升级询问 / 直接推荐
+ *     └─ 收入不达标 → 预算够最低够用？→ 直接推荐 / 预算内最高保额
  */
 function recommendMIPlan(
   hasSocial: boolean, hasHuimin: boolean, hasBaiwan: boolean,
   hasZhongduan: boolean, hasGaoduan: boolean,
-  medicalCost: number,  // 总预估医疗费用（万元）
-  miGap: number,        // 医疗险缺口（万元）
-  budget: number,       // 医疗险年预算（万元）
-  isParent: boolean,    // 是否为父母（用于提示备选方案）
+  medicalCost: number,
+  miGap: number,
+  budget: number,
+  householdIncome: number,
+  isParent: boolean,
 ): { type: string; reason: string } {
   const currentIdx = getCurrentTierIdx(hasSocial, hasHuimin, hasBaiwan, hasZhongduan, hasGaoduan);
   const fmt = (n: number) => (n * 10000).toFixed(0);
 
+  // 1. 已有足够商业险覆盖
   if (miGap <= 0 && (hasBaiwan || hasZhongduan || hasGaoduan)) {
     return { type: '已配置完善', reason: `已有${MI_TIERS[currentIdx].label}，保障已覆盖当前医疗缺口` };
   }
 
-  if (miGap <= 0) {
+  // 2. 无商业险（仅社保医保或惠民保）→ 百万医疗基础保障
+  if (!hasBaiwan && !hasZhongduan && !hasGaoduan) {
+    if (isParent) {
+      return {
+        type: '百万医疗',
+        reason: '建议为父母配置百万医疗（保额80万），如因健康问题无法投保，可考虑防癌医疗险或惠民保',
+      };
+    }
     return { type: '百万医疗', reason: '建议配置百万医疗作为基础保障，年保费约500元' };
   }
 
+  // 3. 有缺口 → 找最低够用层级
   let minSufficientIdx = -1;
   for (let i = currentIdx + 1; i < MI_TIERS.length; i++) {
     if (MI_TIERS[i].coverage >= medicalCost) { minSufficientIdx = i; break; }
@@ -50,27 +66,55 @@ function recommendMIPlan(
   const recIdx = Math.max(minSufficientIdx, currentIdx + 1);
   const recTier = MI_TIERS[recIdx];
 
-  const upgradeIdx = recIdx + 1;
-  if (upgradeIdx < MI_TIERS.length && budget >= MI_TIERS[upgradeIdx].premium) {
-    const upgradeTier = MI_TIERS[upgradeIdx];
-    const alt = isParent ? '如因健康问题无法投保，可考虑防癌医疗险。' : '';
+  // 收入是否达标该层级（minIncome 仅中端/高端医疗有要求）
+  const minIncomeRequired = 'minIncome' in recTier ? recTier.minIncome : 0;
+  const incomeQualified = householdIncome >= minIncomeRequired;
+
+  if (incomeQualified) {
+    // 收入达标 → 看预算能否升级
+    const upgradeIdx = recIdx + 1;
+    if (upgradeIdx < MI_TIERS.length && budget >= MI_TIERS[upgradeIdx].premium) {
+      const upgradeTier = MI_TIERS[upgradeIdx];
+      const alt = isParent ? '如因健康问题无法投保，可考虑防癌医疗险。' : '';
+      return {
+        type: recTier.id,
+        reason: `${recTier.label}（${recTier.coverage}万保额）已能覆盖您的保障缺口。${alt}预算充足，是否考虑升级至${upgradeTier.label}？（年保费约${fmt(upgradeTier.premium)}元）`,
+      };
+    }
+    // 预算不够升级 → 直接推荐
+    const alt = isParent && recTier.id === '百万医疗'
+      ? '，如因健康问题无法投保，可考虑防癌医疗险或惠民保'
+      : '';
     return {
       type: recTier.id,
-      reason: `${recTier.label}（${recTier.coverage}万保额）已能覆盖您的保障缺口。${alt}预算充足，是否考虑升级至${upgradeTier.label}？（年保费约${fmt(upgradeTier.premium)}元）`
+      reason: `推荐${recTier.label}（保额${recTier.coverage}万），年保费约${fmt(recTier.premium)}元${alt}`,
     };
-  }
-
-  if (isParent && recTier.id === '百万医疗') {
+  } else {
+    // 收入不达标（不提示收入）
+    if (budget >= recTier.premium) {
+      return {
+        type: recTier.id,
+        reason: `推荐${recTier.label}（保额${recTier.coverage}万），年保费约${fmt(recTier.premium)}元`,
+      };
+    }
+    // 预算也不够 → 预算内最高保额方案
+    let bestIdx = currentIdx;
+    for (let i = currentIdx + 1; i < MI_TIERS.length; i++) {
+      if (budget >= MI_TIERS[i].premium) bestIdx = i;
+      else break;
+    }
+    if (bestIdx <= currentIdx) {
+      return {
+        type: MI_TIERS[currentIdx].id,
+        reason: `当前预算${fmt(budget)}元范围内暂无更高级别方案，建议维持${MI_TIERS[currentIdx].label}`,
+      };
+    }
+    const bestTier = MI_TIERS[bestIdx];
     return {
-      type: '百万医疗',
-      reason: `建议为父母配置百万医疗（保额${recTier.coverage}万），如因健康问题无法投保，可考虑防癌医疗险或惠民保`
+      type: bestTier.id,
+      reason: `当前预算${fmt(budget)}元，建议配置${bestTier.label}（保额${bestTier.coverage}万），可覆盖大部分医疗缺口`,
     };
   }
-
-  return {
-    type: recTier.id,
-    reason: `推荐${recTier.label}（保额${recTier.coverage}万），年保费约${fmt(recTier.premium)}元`
-  };
 }
 
 /**
@@ -176,6 +220,9 @@ export function calculate(input: UserInput): InsuranceResult {
   const expenseConversion = Excel.getExpense(input.annualExpense);
   // L5
   const inflationI = 0.025;
+  // 家庭年收入总和
+  const totalHouseholdIncome = incomeConversion1 + incomeConversion2;
+
   // L6 = L1/(L1+M1)
   const incomeRatio1 = (incomeConversion1 + incomeConversion2) === 0
     ? 0.5
@@ -336,7 +383,7 @@ export function calculate(input: UserInput): InsuranceResult {
     input.p1_社保医保, input.p1_惠民保, input.p1_百万医疗,
     input.p1_中端医疗, input.p1_高端医疗,
     medicalCost1, medicalGap1,
-    input.firstPersonMIPremiumBudget, false
+    input.firstPersonMIPremiumBudget, totalHouseholdIncome, false
   );
   // D4 = B4 * H25
   const estCIPrem1 = Math.round(ciGapOut1 * kpremium1 * 100) / 100;
@@ -442,7 +489,7 @@ export function calculate(input: UserInput): InsuranceResult {
     input.p2_社保医保, input.p2_惠民保, input.p2_百万医疗,
     input.p2_中端医疗, input.p2_高端医疗,
     medicalCost2, medicalGap2,
-    input.secondPersonMIPremiumBudget, false
+    input.secondPersonMIPremiumBudget, totalHouseholdIncome, false
   );
   // D19 = B19 * I25
   const estCIPrem2 = Math.round(ciGapOut2 * kpremium2 * 100) / 100;
@@ -535,7 +582,7 @@ export function calculate(input: UserInput): InsuranceResult {
     input.child_社保医保, input.child_惠民保, input.child_百万医疗,
     input.child_中端医疗, input.child_高端医疗,
     childMedicalCost, childMIGap,
-    input.childMIPremiumBudget, false
+    input.childMIPremiumBudget, totalHouseholdIncome, false
   );
   // D34 = E22
   const childMITerm = input.childMIPremiumBudget;
@@ -576,7 +623,7 @@ export function calculate(input: UserInput): InsuranceResult {
     input.parent_社保医保, input.parent_惠民保, input.parent_百万医疗,
     input.parent_中端医疗, input.parent_高端医疗,
     parentMedicalCost, parentMIGap,
-    input.parentMIPremiumBudget, true
+    input.parentMIPremiumBudget, totalHouseholdIncome, true
   );
   // 父母推荐最终使用新逻辑（而不是旧的固定升级链）
   const parentRecommendedMI = parentMIType;
@@ -616,8 +663,17 @@ export function calculate(input: UserInput): InsuranceResult {
     ? Math.round(totalAnnualPrem / annualIncome * 100) / 100
     : 99;
 
-  const riskLevel = premiumToIncomeRatio < 1 ? '低风险'
-    : premiumToIncomeRatio <= 3 ? '中等风险'
+  // 加权风险指数：健康险0.85 + 寿险0.35 + 养老金0.25（充分考虑各险种紧迫度）
+  const weightedPrem =
+    (totalHealthPrem1 + totalHealthPrem2) * 0.85 +
+    (estLifePrem1 + estLifePrem2) / 10000 * 0.35 +
+    (recPension1 + recPension2) * 0.25;
+  const riskIndex = annualIncome > 0
+    ? Math.round(weightedPrem / annualIncome * 10000) / 100
+    : 99;
+
+  const riskLevel = riskIndex < 3 ? '低风险'
+    : riskIndex <= 8 ? '中等风险'
     : '高风险';
 
   const priority = ciGap1 > 30 || ciGap2 > 30 ? '优先配置重疾险'
@@ -628,6 +684,7 @@ export function calculate(input: UserInput): InsuranceResult {
   return {
     totalGap,
     riskLevel,
+    riskIndex,
     priority,
     totalHealthGap,
     totalLifeGap,

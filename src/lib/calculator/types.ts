@@ -310,6 +310,7 @@ export interface ParentInsuranceResult {
 export interface InsuranceResult {
   totalGap: number;
   riskLevel: string;
+  riskIndex: number;              // 加权风险指数(%)
   priority: string;
   totalAnnualPrem: number;         // 年度总保费（万元）
   premiumToIncomeRatio: number;    // 保费/收入比

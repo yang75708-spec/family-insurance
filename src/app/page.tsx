@@ -660,10 +660,10 @@ export default function Home() {
                       </table>
                     </div>
                     <div className="mt-3 flex items-center gap-2 text-xs text-text-tertiary bg-sage-50/60 rounded-xl px-4 py-3">
-                      <span>保费/收入比：</span>
-                      <span className="font-bold text-text-primary">{result.premiumToIncomeRatio.toFixed(2)}</span>
-                      <span className={result.premiumToIncomeRatio < 1 ? "text-sage-600 font-semibold" : result.premiumToIncomeRatio <= 3 ? "text-amber-500 font-semibold" : "text-rose-400 font-semibold"}>{result.riskLevel}</span>
-                      <span className="text-text-tertiary">— &lt;1 低风险，1-3 中风险，&gt;3 高风险</span>
+                      <span>风险指数：</span>
+                      <span className="font-bold text-text-primary">{result.riskIndex.toFixed(2)}%</span>
+                      <span className={result.riskLevel === "低风险" ? "text-sage-600 font-semibold" : result.riskLevel === "中等风险" ? "text-amber-500 font-semibold" : "text-rose-400 font-semibold"}>{result.riskLevel}</span>
+                      <span className="text-text-tertiary">— &lt;3% 低风险，3-8% 中等风险，&gt;8% 高风险</span>
                     </div>
                   </motion.div>
 
