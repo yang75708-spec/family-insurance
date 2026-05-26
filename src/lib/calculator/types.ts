@@ -104,6 +104,8 @@ export interface UserInput {
   secondPersonLifeBudget: number;// D36
 
   // 养老金输入
+  firstPersonHasPension: boolean;  // 是否有养老资金
+  secondPersonHasPension: boolean;
   firstPersonRetireAge: number;  // B42
   secondPersonRetireAge: number; // B43
   firstPersonRetireYears: number;// C42

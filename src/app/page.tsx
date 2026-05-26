@@ -130,26 +130,7 @@ const PAGES: PG[] = [
   {
     title: "养老金配置",
     subtitle: "退休规划与现有养老储备",
-    questions: [
-      { key: "firstPersonRetireAge", label: "第一支柱计划退休年龄", desc: "越早退休需要储备越多养老金", icon: I.clock, type: "number", unit: "岁", min: 50, max: 70 },
-      { key: "secondPersonRetireAge", label: "第二支柱计划退休年龄", icon: I.clock, type: "number", unit: "岁", min: 50, max: 70 },
-      { key: "firstPersonRetireYears", label: "第一支柱退休后生活年限", desc: "预计退休后需要维持生活质量的年数", icon: I.clock, type: "number", unit: "年", min: 5, max: 40 },
-      { key: "secondPersonRetireYears", label: "第二支柱退休后生活年限", icon: I.clock, type: "number", unit: "年", min: 5, max: 40 },
-      { key: "firstPersonRetireGoal", label: "第一支柱退休后年生活目标", desc: "退休后每年需要的生活费用", icon: I.wallet, type: "number", unit: "万元", min: 0, step: 0.5 },
-      { key: "secondPersonRetireGoal", label: "第二支柱退休后年生活目标", icon: I.wallet, type: "number", unit: "万元", min: 0, step: 0.5 },
-      { key: "firstPersonPensionFund", label: "第一支柱养老专项存款", desc: "已预留的养老资金", icon: I.bank, type: "number", unit: "万元", min: 0 },
-      { key: "secondPersonPensionFund", label: "第二支柱养老专项存款", icon: I.bank, type: "number", unit: "万元", min: 0 },
-      { key: "firstPersonComPension", label: "第一支柱商业养老金价值", icon: I.bank, type: "number", unit: "万元", min: 0 },
-      { key: "secondPersonComPension", label: "第二支柱商业养老金价值", icon: I.bank, type: "number", unit: "万元", min: 0 },
-      { key: "firstPersonPersonalPension", label: "第一支柱个人养老金账户", icon: I.bank, type: "number", unit: "万元", min: 0 },
-      { key: "secondPersonPersonalPension", label: "第二支柱个人养老金账户", icon: I.bank, type: "number", unit: "万元", min: 0 },
-      { key: "firstPersonSocialPension", label: "第一支柱社保月养老金估计", desc: "预计退休后每月可领取的社保养老金", icon: I.wallet, type: "number", unit: "万元", min: 0 },
-      { key: "secondPersonSocialPension", label: "第二支柱社保月养老金估计", icon: I.wallet, type: "number", unit: "万元", min: 0 },
-      { key: "firstPersonPayYears", label: "第一支柱养老金缴费年限", desc: "计划缴纳养老金的年数", icon: I.clock, type: "number", unit: "年", min: 0, max: 40 },
-      { key: "secondPersonPayYears", label: "第二支柱养老金缴费年限", icon: I.clock, type: "number", unit: "年", min: 0, max: 40 },
-      { key: "firstPersonPensionBudget", label: "第一支柱养老金年预算", icon: I.wallet, type: "number", unit: "万元", min: 0 },
-      { key: "secondPersonPensionBudget", label: "第二支柱养老金年预算", icon: I.wallet, type: "number", unit: "万元", min: 0 },
-    ],
+    questions: [],
   },
 ];
 
@@ -251,6 +232,46 @@ function QuestionItem({ q, val, onChange, index }: { q: Q; val: unknown; onChang
         </div>
       </div>
     </motion.div>
+  );
+}
+
+// ─── Pension Helpers ───
+function PensionNumberItem({ label, desc, unit, value, min, max, step, onChange }: {
+  label: string; desc?: string; unit: string; value: number; min?: number; max?: number; step?: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div>
+      <label className="text-[11px] font-medium text-text-tertiary mb-1.5 block">
+        {label}
+        {desc && <span className="text-text-tertiary/60"> — {desc}</span>}
+      </label>
+      <div className="relative">
+        <input type="number" value={value} min={min} max={max} step={step}
+          onChange={(e) => onChange(e.target.value === '' ? 0 : Number(e.target.value))}
+          onFocus={(e) => e.target.select()}
+          className="w-full text-sm h-10 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary" />
+        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] text-text-tertiary pointer-events-none font-medium">{unit}</span>
+      </div>
+    </div>
+  );
+}
+
+function PensionToggle({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div>
+      <label className="text-[11px] font-medium text-text-tertiary mb-1.5 block">{label}</label>
+      <div className="flex gap-2">
+        <button onClick={() => onChange(true)}
+          className={cn("flex-1 text-sm h-10 px-4 rounded-input border transition-all font-medium",
+            value ? "bg-sage-300/80 text-white border-sage-300" : "bg-white/60 text-text-tertiary border-sage-200/50 hover:border-sage-300 hover:text-sage-600"
+          )}>有</button>
+        <button onClick={() => onChange(false)}
+          className={cn("flex-1 text-sm h-10 px-4 rounded-input border transition-all font-medium",
+            !value ? "bg-sage-300/80 text-white border-sage-300" : "bg-white/60 text-text-tertiary border-sage-200/50 hover:border-sage-300 hover:text-sage-600"
+          )}>没有</button>
+      </div>
+    </div>
   );
 }
 
@@ -382,8 +403,8 @@ export default function Home() {
                 </div>
               )}
 
-              {/* ═══ Input Pages (1-5, special case step 3) ═══ */}
-              {step >= 1 && step <= 5 && step !== 3 && (
+              {/* ═══ Input Pages (1-5, special case step 3 & 5) ═══ */}
+              {step >= 1 && step <= 5 && step !== 3 && step !== 5 && (
                 <div className="max-w-2xl mx-auto">
                   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-8">
                     <div className="w-11 h-11 rounded-xl bg-sage-50 flex items-center justify-center">
@@ -398,6 +419,82 @@ export default function Home() {
                     {PAGES[step - 1].questions.map((q, i) => (
                       <QuestionItem key={q.key} q={q} val={(input as unknown as Record<string, unknown>)[q.key]} onChange={handle} index={i} />
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ═══ Pension Page (step 5) ═══ */}
+              {step === 5 && (
+                <div className="max-w-2xl mx-auto">
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-8">
+                    <div className="w-11 h-11 rounded-xl bg-sage-50 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" dangerouslySetInnerHTML={{ __html: PAGE_ICONS[4] }} />
+                    </div>
+                    <div>
+                      <h1 className="text-xl font-bold text-text-primary font-display">养老金配置</h1>
+                      <p className="text-xs text-text-tertiary">退休规划与现有养老储备</p>
+                    </div>
+                  </motion.div>
+
+                  <div className="space-y-6">
+                    {/* 第一经济支柱 */}
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="glass rounded-card p-6">
+                      <h3 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-lg bg-sage-300/80 flex items-center justify-center text-white text-[10px] font-bold">1</span>
+                        第一经济支柱
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <PensionNumberItem label="计划退休年龄" desc="越早退休需要储备越多养老金" unit="岁" value={input.firstPersonRetireAge} min={50} max={70} onChange={(v) => handle("firstPersonRetireAge", v)} />
+                        <PensionNumberItem label="退休后生活年限" desc="预计退休后需要维持生活质量的年数" unit="年" value={input.firstPersonRetireYears} min={5} max={40} onChange={(v) => handle("firstPersonRetireYears", v)} />
+                        <PensionNumberItem label="退休后年生活目标" desc="退休后每年需要的生活费用" unit="万元" value={input.firstPersonRetireGoal} min={0} step={0.5} onChange={(v) => handle("firstPersonRetireGoal", v)} />
+                        <PensionToggle label="是否已有养老资金" value={input.firstPersonHasPension} onChange={(v) => handle("firstPersonHasPension", v)} />
+                      </div>
+                      {input.firstPersonHasPension && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-4 border-t border-sage-100">
+                          <PensionNumberItem label="养老专项存款" desc="已预留的养老资金" unit="万元" value={input.firstPersonPensionFund} min={0} onChange={(v) => handle("firstPersonPensionFund", v)} />
+                          <PensionNumberItem label="商业养老金价值" unit="万元" value={input.firstPersonComPension} min={0} onChange={(v) => handle("firstPersonComPension", v)} />
+                        </motion.div>
+                      )}
+                    </motion.div>
+
+                    {/* 第二经济支柱 */}
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass rounded-card p-6">
+                      <h3 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-lg bg-sage-300/80 flex items-center justify-center text-white text-[10px] font-bold">2</span>
+                        第二经济支柱
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <PensionNumberItem label="计划退休年龄" unit="岁" value={input.secondPersonRetireAge} min={50} max={70} onChange={(v) => handle("secondPersonRetireAge", v)} />
+                        <PensionNumberItem label="退休后生活年限" unit="年" value={input.secondPersonRetireYears} min={5} max={40} onChange={(v) => handle("secondPersonRetireYears", v)} />
+                        <PensionNumberItem label="退休后年生活目标" unit="万元" value={input.secondPersonRetireGoal} min={0} step={0.5} onChange={(v) => handle("secondPersonRetireGoal", v)} />
+                        <PensionToggle label="是否已有养老资金" value={input.secondPersonHasPension} onChange={(v) => handle("secondPersonHasPension", v)} />
+                      </div>
+                      {input.secondPersonHasPension && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-4 border-t border-sage-100">
+                          <PensionNumberItem label="养老专项存款" desc="已预留的养老资金" unit="万元" value={input.secondPersonPensionFund} min={0} onChange={(v) => handle("secondPersonPensionFund", v)} />
+                          <PensionNumberItem label="商业养老金价值" unit="万元" value={input.secondPersonComPension} min={0} onChange={(v) => handle("secondPersonComPension", v)} />
+                        </motion.div>
+                      )}
+                    </motion.div>
+
+                    {/* 通用设置 */}
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="glass rounded-card p-6">
+                      <h3 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-lg bg-sage-100 flex items-center justify-center text-text-tertiary text-[10px] font-bold">⚙</span>
+                        其他养老金设置
+                      </h3>
+                      <p className="text-[11px] text-text-tertiary mb-4">社保养老金和个人养老金账户会纳入已有储备计算</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <PensionNumberItem label="第一支柱个人养老金账户" desc="个人养老金账户现有余额" unit="万元" value={input.firstPersonPersonalPension} min={0} onChange={(v) => handle("firstPersonPersonalPension", v)} />
+                        <PensionNumberItem label="第一支柱社保月养老金估计" desc="预计退休后每月可领取" unit="万元" value={input.firstPersonSocialPension} min={0} onChange={(v) => handle("firstPersonSocialPension", v)} />
+                        <PensionNumberItem label="第一支柱缴费年限" desc="计划缴纳养老金的年数" unit="年" value={input.firstPersonPayYears} min={0} max={40} onChange={(v) => handle("firstPersonPayYears", v)} />
+                        <PensionNumberItem label="第一支柱年预算" unit="万元" value={input.firstPersonPensionBudget} min={0} onChange={(v) => handle("firstPersonPensionBudget", v)} />
+                        <PensionNumberItem label="第二支柱个人养老金账户" unit="万元" value={input.secondPersonPersonalPension} min={0} onChange={(v) => handle("secondPersonPersonalPension", v)} />
+                        <PensionNumberItem label="第二支柱社保月养老金估计" unit="万元" value={input.secondPersonSocialPension} min={0} onChange={(v) => handle("secondPersonSocialPension", v)} />
+                        <PensionNumberItem label="第二支柱缴费年限" unit="年" value={input.secondPersonPayYears} min={0} max={40} onChange={(v) => handle("secondPersonPayYears", v)} />
+                        <PensionNumberItem label="第二支柱年预算" unit="万元" value={input.secondPersonPensionBudget} min={0} onChange={(v) => handle("secondPersonPensionBudget", v)} />
+                      </div>
+                    </motion.div>
                   </div>
                 </div>
               )}

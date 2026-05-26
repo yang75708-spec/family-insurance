@@ -100,6 +100,8 @@ export const defaultInput: UserInput = {
   secondPersonLifeBudget: 3000,
 
   // 养老金
+  firstPersonHasPension: false,
+  secondPersonHasPension: false,
   firstPersonRetireAge: 65,
   secondPersonRetireAge: 65,
   firstPersonRetireYears: 20,
