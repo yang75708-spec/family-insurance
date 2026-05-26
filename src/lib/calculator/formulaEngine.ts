@@ -358,10 +358,10 @@ export function calculate(input: UserInput): InsuranceResult {
   const retireNeedPV1 = Excel.PV(discountRate, input.firstPersonRetireYears, -retireNeedFV1, 0, 1);
   // H5 = FV(0.05, B42-B3, 0, -B46, 0) + FV(0.05, B42-B3, 0, -C46, 0) + FV(0.05, B42-B3, 0, -D46, 0) + PV(0.05, C42, -E46*12, 0, 1)
   const existingReserveFV1 =
-    Excel.FV(discountRate, remainingN1, 0, -(input.firstPersonPensionFund / 10000), 0) +
-    Excel.FV(discountRate, remainingN1, 0, -(input.firstPersonComPension / 10000), 0) +
-    Excel.FV(discountRate, remainingN1, 0, -(input.firstPersonPersonalPension / 10000), 0) +
-    Excel.PV(discountRate, input.firstPersonRetireYears, -(input.firstPersonSocialPension * 12 / 10000), 0, 1);
+    Excel.FV(discountRate, remainingN1, 0, -(input.firstPersonPensionFund), 0) +
+    Excel.FV(discountRate, remainingN1, 0, -(input.firstPersonComPension), 0) +
+    Excel.FV(discountRate, remainingN1, 0, -(input.firstPersonPersonalPension), 0) +
+    Excel.PV(discountRate, input.firstPersonRetireYears, -(input.firstPersonSocialPension * 12), 0, 1);
   // H6 = MAX(0, H4 - H5)  — 全部统一为万元
   const retireGap1 = Math.max(0, retireNeedPV1 - existingReserveFV1);
 
@@ -452,10 +452,10 @@ export function calculate(input: UserInput): InsuranceResult {
   const retireNeedFV2 = input.secondPersonRetireGoal * Math.pow(1 + inflationRate, remainingN2);
   const retireNeedPV2 = Excel.PV(discountRate, input.secondPersonRetireYears, -retireNeedFV2, 0, 1);
   const existingReserveFV2 =
-    Excel.FV(discountRate, remainingN2, 0, -(input.secondPersonPensionFund / 10000), 0) +
-    Excel.FV(discountRate, remainingN2, 0, -(input.secondPersonComPension / 10000), 0) +
-    Excel.FV(discountRate, remainingN2, 0, -(input.secondPersonPersonalPension / 10000), 0) +
-    Excel.PV(discountRate, input.secondPersonRetireYears, -(input.secondPersonSocialPension * 12 / 10000), 0, 1);
+    Excel.FV(discountRate, remainingN2, 0, -(input.secondPersonPensionFund), 0) +
+    Excel.FV(discountRate, remainingN2, 0, -(input.secondPersonComPension), 0) +
+    Excel.FV(discountRate, remainingN2, 0, -(input.secondPersonPersonalPension), 0) +
+    Excel.PV(discountRate, input.secondPersonRetireYears, -(input.secondPersonSocialPension * 12), 0, 1);
   const retireGap2 = Math.max(0, retireNeedPV2 - existingReserveFV2);
 
   const recPension2 = input.secondPersonPayYears > 0
