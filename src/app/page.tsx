@@ -334,7 +334,7 @@ export default function Home() {
                 <button onClick={() => i <= step && goTo(i)}
                   className={cn(
                     "text-base sm:text-lg transition-all duration-300 shrink-0",
-                    i === step ? "opacity-100 scale-110 drop-shadow-sm" : i < step ? "opacity-40 hover:opacity-70 cursor-pointer" : "opacity-15 cursor-default"
+                    i === step ? "opacity-100 scale-110 drop-shadow-sm" : i < step ? "opacity-80 hover:opacity-100 cursor-pointer" : "opacity-15 cursor-default"
                   )}>{item.emoji}</button>
                 {i < LABELS.length - 1 && (
                   <div className={cn("flex-1 h-px mx-1.5 transition-colors duration-300", i < step ? "bg-sage-300/50" : "bg-sage-100")} />
