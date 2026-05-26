@@ -66,10 +66,10 @@ export const Excel = {
   },
 
   // Excel PV(rate, nper, pmt, [fv], [type])
-  // PV = -(pmt * (1 + rate * type) * ((1 + rate)^nper - 1) / rate + fv / (1 + rate)^nper)
+  // PV = -(pmt * (1 + rate * type) * (1 - 1/(1 + rate)^nper) / rate + fv / (1 + rate)^nper)
   PV(rate: number, nper: number, pmt: number, fv: number = 0, type: number = 0): number {
     if (rate === 0) return -(pmt * nper + fv);
-    const pvifa = (1 + rate * type) * ((Math.pow(1 + rate, nper) - 1) / rate);
+    const pvifa = (1 + rate * type) * ((1 - 1 / Math.pow(1 + rate, nper)) / rate);
     return -(pmt * pvifa + fv / Math.pow(1 + rate, nper));
   },
 

@@ -365,8 +365,8 @@ export function calculate(input: UserInput): InsuranceResult {
   // H6 = MAX(0, H4 - H5)  — 全部统一为万元
   const retireGap1 = Math.max(0, retireNeedPV1 - existingReserveFV1);
 
-  // B13 = PMT(0.05, B52, 0, -H6, 1)  — 结果在万元，保持万元（除以10000转回来给PMT不对，显示时再处理）
-  const recPension1 = Math.round(-Excel.PMT(discountRate, input.firstPersonPayYears, 0, -retireGap1, 1) * 100) / 100;
+  // B13 = PMT(0.05, B52, 0, H6, 1) * (-1)  — 结果在万元，不低于0
+  const recPension1 = Math.max(0, Math.round(-Excel.PMT(discountRate, input.firstPersonPayYears, 0, retireGap1, 1) * 100) / 100);
   // B14 = H5
   const existingPensionFV1 = existingReserveFV1;
   // B15 = D42
@@ -459,7 +459,7 @@ export function calculate(input: UserInput): InsuranceResult {
   const retireGap2 = Math.max(0, retireNeedPV2 - existingReserveFV2);
 
   const recPension2 = input.secondPersonPayYears > 0
-    ? Math.round(-Excel.PMT(discountRate, input.secondPersonPayYears, 0, -retireGap2, 1) * 100) / 100
+    ? Math.max(0, Math.round(-Excel.PMT(discountRate, input.secondPersonPayYears, 0, retireGap2, 1) * 100) / 100)
     : 0;
   const existingPensionFV2 = existingReserveFV2;
   const annualRetireGoal2 = input.secondPersonRetireGoal;
