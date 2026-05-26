@@ -298,7 +298,7 @@ export default function Home() {
   const LABELS = ["欢迎", "家庭信息", "财务状况", "健康险", "寿险", "养老金", "结果"];
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="h-dvh flex flex-col relative overflow-hidden">
       {/* 背景氛围光晕 */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full" style={{ background: 'radial-gradient(circle, rgba(168,181,162,0.15) 0%, transparent 70%)', animation: 'softGlow 8s ease-in-out infinite' }} />
@@ -306,7 +306,7 @@ export default function Home() {
       </div>
 
       {/* ─── Header ─── */}
-      <header className="sticky top-0 z-50 glass border-b border-white/30">
+      <header className="shrink-0 z-50 glass border-b border-white/30">
         {/* Logo 行 */}
         <div className="max-w-4xl mx-auto px-6 h-14 flex items-center">
           <div className="flex items-center gap-3">
@@ -345,8 +345,8 @@ export default function Home() {
           </div>
       </header>
 
-      <div className="flex-1 flex flex-col">
-        <div className="flex-1 max-w-4xl mx-auto w-full px-6 py-8">
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-4xl mx-auto w-full px-6 py-8">
           <AnimatePresence mode="wait" custom={dir}>
             <motion.div key={step} custom={dir} variants={{
               enter: (d: number) => ({ x: d > 0 ? 320 : -320, opacity: 0 }),
@@ -664,6 +664,7 @@ export default function Home() {
                     <StatCard label="总保障缺口" value={`${result.totalGap.toFixed(0)} 万元`} trend={result.totalGap > 100 ? "bad" : result.totalGap > 30 ? "neutral" : "good"} />
                     <StatCard label="健康险缺口" value={`${result.totalHealthGap.toFixed(0)} 万元`} trend={result.totalHealthGap > 50 ? "bad" : "good"} />
                     <StatCard label="寿险缺口" value={`${result.totalLifeGap.toFixed(0)} 万元`} trend={result.totalLifeGap > 50 ? "bad" : "good"} />
+                    <StatCard label="养老金缺口" value={`${result.totalPensionGap.toFixed(0)} 万元`} trend={result.totalPensionGap > 50 ? "bad" : "good"} />
                     <StatCard label="风险等级" value={result.riskLevel} trend={result.riskLevel === "低风险" ? "good" : result.riskLevel === "中等风险" ? "neutral" : "bad"} />
                     <StatCard label="年度总保费" value={`${result.totalAnnualPrem.toFixed(1)} 万元`} trend={result.totalAnnualPrem > 20 ? "bad" : "neutral"} />
                   </div>
@@ -818,10 +819,11 @@ export default function Home() {
             </motion.div>
           </AnimatePresence>
         </div>
+      </div>
 
-        {/* ─── Bottom Nav ─── */}
-        <div className="border-t border-white/30 glass">
-          <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+      {/* ─── Bottom Nav ─── */}
+      <div className="border-t border-white/30 glass shrink-0">
+        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
             <motion.button onClick={() => goTo(step - 1)} disabled={step === 0}
               whileHover={step > 0 ? { scale: 1.02 } : {}}
               className={cn("px-6 py-2.5 text-sm font-medium rounded-button transition-all", step === 0 ? "text-sage-200 cursor-not-allowed" : "text-text-secondary hover:bg-white/30")}>
@@ -839,7 +841,6 @@ export default function Home() {
               {step === 0 ? "开始配置 →" : step === 5 ? "查看结果 →" : "下一步 →"}
             </motion.button>
           </div>
-        </div>
       </div>
     </div>
   );
