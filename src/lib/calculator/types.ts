@@ -210,6 +210,7 @@ export interface PersonInsuranceResult {
   miGap: number;                   // B6
   totalHealthGap: number;          // B7
   recommendedMIType: string;       // D3
+  recommendedMIReason: string;     // 推荐理由
   estimatedCIPremium: number;      // D4
   estimatedMIPremium: number;      // D5
   totalHealthPremium: number;      // D6
@@ -239,6 +240,7 @@ export interface Person2InsuranceResult {
   miGap: number;                   // B21
   totalHealthGap: number;          // B22
   recommendedMIType: string;       // D18
+  recommendedMIReason: string;     // 推荐理由
   estimatedCIPremium: number;      // D19
   estimatedMIPremium: number;      // D20
   totalHealthPremium: number;      // D21
@@ -265,6 +267,7 @@ export interface ChildInsuranceResult {
   ciGap: number;                  // B35
   ciTerm: number;                 // B36
   recommendedMIType: string;      // D33
+  recommendedMIReason: string;
   miTerm: number;                 // D34
   recommendedAccidentCoverage: number; // D35
   priority: string;               // D36
@@ -287,6 +290,7 @@ export interface ParentInsuranceResult {
   ciGap: number;                  // B49
   ciTerm: number;                 // B50
   recommendedMIType: string;      // D47
+  recommendedMIReason: string;
   miTerm: number;                 // D48
   recommendedAccidentCoverage: string; // D49
   priority: string;               // D50

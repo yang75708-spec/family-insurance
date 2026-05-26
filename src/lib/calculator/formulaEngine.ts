@@ -1,33 +1,76 @@
 import { Excel, getJobStabilityFactor, getLiquidAsset } from './excelEngine';
 import { UserInput, CalculatedParams, InsuranceResult } from './types';
 
-/**
- * 根据已有健康险组合，推荐下一级医疗险类型
- * 优先级：高端医疗 > 中端医疗 > 百万医疗 > 惠民保 > 社保医保
- */
-function recommendNextMIType(hasSiShe: boolean, hasHuiMin: boolean, hasBaiWan: boolean, hasZhongDuan: boolean, hasGaoDuan: boolean, income: string): string {
-  // 如果有高端医疗 → 已配置齐全
-  if (hasGaoDuan) return '已配置高端医疗';
-  // 如果有中端医疗 → 推荐升级到高端医疗
-  if (hasZhongDuan) return '高端医疗';
-  // 如果有百万医疗 → 推荐升级到中端医疗
-  if (hasBaiWan) return '中端医疗';
-  // 已有惠民保 → 推荐百万医疗
-  if (hasHuiMin) return '百万医疗';
-  // 仅有社保或全无 → 根据收入推荐
-  if (income === '15万以下' || income === '15-30万') return '百万医疗';
-  if (income === '30-60万' || income === '60-100万') return '中端医疗';
-  // 高收入人群直接推荐高端医疗
-  return '高端医疗';
+// ====== 医疗险推荐层级 ======
+const MI_TIERS = [
+  { id: '社保医保', coverage: 8, premium: 0, label: '社保医保' },
+  { id: '惠民保', coverage: 15, premium: 0.008, label: '惠民保' },
+  { id: '百万医疗', coverage: 80, premium: 0.05, label: '百万医疗' },
+  { id: '中端医疗', coverage: 150, premium: 0.4, label: '中端医疗' },
+  { id: '高端医疗', coverage: 300, premium: 2, label: '高端医疗' },
+] as const;
+
+function getCurrentTierIdx(hasSocial: boolean, hasHuimin: boolean, hasBaiwan: boolean, hasZhongduan: boolean, hasGaoduan: boolean): number {
+  if (hasGaoduan) return 4;
+  if (hasZhongduan) return 3;
+  if (hasBaiwan) return 2;
+  if (hasHuimin) return 1;
+  return 0;
 }
 
 /**
- * 根据收入水平推荐医疗险类型（结果页用）
+ * 缺口驱动 + 预算检验的医疗险推荐（温馨版）
+ * 只关心：保障够不够 → 预算允不允许升级
  */
-function recommendMITypeByIncome(income: string): string {
-  if (income === '15万以下' || income === '15-30万') return '百万医疗';
-  if (income === '30-60万' || income === '60-100万') return '中端医疗';
-  return '高端医疗';
+function recommendMIPlan(
+  hasSocial: boolean, hasHuimin: boolean, hasBaiwan: boolean,
+  hasZhongduan: boolean, hasGaoduan: boolean,
+  medicalCost: number,  // 总预估医疗费用（万元）
+  miGap: number,        // 医疗险缺口（万元）
+  budget: number,       // 医疗险年预算（万元）
+  isParent: boolean,    // 是否为父母（用于提示备选方案）
+): { type: string; reason: string } {
+  const currentIdx = getCurrentTierIdx(hasSocial, hasHuimin, hasBaiwan, hasZhongduan, hasGaoduan);
+  const fmt = (n: number) => (n * 10000).toFixed(0);
+
+  if (miGap <= 0 && (hasBaiwan || hasZhongduan || hasGaoduan)) {
+    return { type: '已配置完善', reason: `已有${MI_TIERS[currentIdx].label}，保障已覆盖当前医疗缺口` };
+  }
+
+  if (miGap <= 0) {
+    return { type: '百万医疗', reason: '建议配置百万医疗作为基础保障，年保费约500元' };
+  }
+
+  let minSufficientIdx = -1;
+  for (let i = currentIdx + 1; i < MI_TIERS.length; i++) {
+    if (MI_TIERS[i].coverage >= medicalCost) { minSufficientIdx = i; break; }
+  }
+  if (minSufficientIdx === -1) minSufficientIdx = MI_TIERS.length - 1;
+
+  const recIdx = Math.max(minSufficientIdx, currentIdx + 1);
+  const recTier = MI_TIERS[recIdx];
+
+  const upgradeIdx = recIdx + 1;
+  if (upgradeIdx < MI_TIERS.length && budget >= MI_TIERS[upgradeIdx].premium) {
+    const upgradeTier = MI_TIERS[upgradeIdx];
+    const alt = isParent ? '如因健康问题无法投保，可考虑防癌医疗险。' : '';
+    return {
+      type: recTier.id,
+      reason: `${recTier.label}（${recTier.coverage}万保额）已能覆盖您的保障缺口。${alt}预算充足，是否考虑升级至${upgradeTier.label}？（年保费约${fmt(upgradeTier.premium)}元）`
+    };
+  }
+
+  if (isParent && recTier.id === '百万医疗') {
+    return {
+      type: '百万医疗',
+      reason: `建议为父母配置百万医疗（保额${recTier.coverage}万），如因健康问题无法投保，可考虑防癌医疗险或惠民保`
+    };
+  }
+
+  return {
+    type: recTier.id,
+    reason: `推荐${recTier.label}（保额${recTier.coverage}万），年保费约${fmt(recTier.premium)}元`
+  };
 }
 
 /**
@@ -288,10 +331,12 @@ export function calculate(input: UserInput): InsuranceResult {
   // B7 = B4 + B6
   const totalHealthGap1 = Math.round((ciGapOut1 + miGapOut1) * 100) / 100;
 
-  // D3 = recommendNextMIType(基于新版多选勾选)
-  const recMIType1 = recommendNextMIType(
+  // D3 = recommendMIPlan
+  const { type: recMIType1, reason: miReason1 } = recommendMIPlan(
     input.p1_社保医保, input.p1_惠民保, input.p1_百万医疗,
-    input.p1_中端医疗, input.p1_高端医疗, input.firstPersonIncome
+    input.p1_中端医疗, input.p1_高端医疗,
+    medicalCost1, medicalGap1,
+    input.firstPersonMIPremiumBudget, false
   );
   // D4 = B4 * H25
   const estCIPrem1 = Math.round(ciGapOut1 * kpremium1 * 100) / 100;
@@ -392,10 +437,12 @@ export function calculate(input: UserInput): InsuranceResult {
   // B22 = I17 + I24
   const totalHealthGap2 = Math.round((ciGapOut2 + miGapOut2) * 100) / 100;
 
-  // D18 = recommendNextMIType(基于新版多选勾选)
-  const recMIType2 = recommendNextMIType(
+  // D18 = recommendMIPlan
+  const { type: recMIType2, reason: miReason2 } = recommendMIPlan(
     input.p2_社保医保, input.p2_惠民保, input.p2_百万医疗,
-    input.p2_中端医疗, input.p2_高端医疗, input.secondPersonIncome
+    input.p2_中端医疗, input.p2_高端医疗,
+    medicalCost2, medicalGap2,
+    input.secondPersonMIPremiumBudget, false
   );
   // D19 = B19 * I25
   const estCIPrem2 = Math.round(ciGapOut2 * kpremium2 * 100) / 100;
@@ -481,10 +528,14 @@ export function calculate(input: UserInput): InsuranceResult {
   const childCIGap = Math.max(0, childCIRec - childCIExist);
   // B36 = D22
   const childCITerm = input.childCIPremiumBudget;
-  // D33 = recommendNextMIType(基于子女勾选)
-  const childMIType = recommendNextMIType(
+  // D33 = recommendMIPlan
+  const childMedicalCost = baseMedicalCost1;
+  const childMIGap = 0;
+  const { type: childMIType, reason: childMIReason } = recommendMIPlan(
     input.child_社保医保, input.child_惠民保, input.child_百万医疗,
-    input.child_中端医疗, input.child_高端医疗, '15万以下'
+    input.child_中端医疗, input.child_高端医疗,
+    childMedicalCost, childMIGap,
+    input.childMIPremiumBudget, false
   );
   // D34 = E22
   const childMITerm = input.childMIPremiumBudget;
@@ -518,19 +569,17 @@ export function calculate(input: UserInput): InsuranceResult {
   const parentCIExist = input.parentCIExisting;
   const parentCIGap = Math.max(0, parentCIRec - parentCIExist);
   const parentCITerm = input.parentCIPremiumBudget;
-  // D47 = recommendNextMIType(基于父母勾选，父母推荐偏稳健)
-  const parentMIType = recommendNextMIType(
+  // D47 = recommendMIPlan
+  const parentMedicalCost = baseMedicalCost1;
+  const parentMIGap = 0;
+  const { type: parentMIType, reason: parentMIReason } = recommendMIPlan(
     input.parent_社保医保, input.parent_惠民保, input.parent_百万医疗,
-    input.parent_中端医疗, input.parent_高端医疗, '15-30万'
+    input.parent_中端医疗, input.parent_高端医疗,
+    parentMedicalCost, parentMIGap,
+    input.parentMIPremiumBudget, true
   );
-
-  // 如果是父母，惠民保/防癌医疗险也是好选择
-  const parentRecommendedMI = input.parent_高端医疗 ? '已配置高端医疗'
-    : input.parent_中端医疗 ? '高端医疗'
-    : input.parent_百万医疗 ? '中端医疗'
-    : input.parent_惠民保 ? '百万医疗'
-    : input.parent_社保医保 ? '防癌医疗险/惠民保'
-    : '防癌医疗险/惠民保';
+  // 父母推荐最终使用新逻辑（而不是旧的固定升级链）
+  const parentRecommendedMI = parentMIType;
   const parentMITerm = input.parentMIPremiumBudget;
   const parentAccident = '20/人';
   const parentPriority = '医疗+意外为主';
@@ -592,6 +641,7 @@ export function calculate(input: UserInput): InsuranceResult {
       miGap: miGapOut1,
       totalHealthGap: totalHealthGap1,
       recommendedMIType: recMIType1,
+      recommendedMIReason: miReason1,
       estimatedCIPremium: estCIPrem1,
       estimatedMIPremium: estMIPrem1,
       totalHealthPremium: totalHealthPrem1,
@@ -616,6 +666,7 @@ export function calculate(input: UserInput): InsuranceResult {
       miGap: miGapOut2,
       totalHealthGap: totalHealthGap2,
       recommendedMIType: recMIType2,
+      recommendedMIReason: miReason2,
       estimatedCIPremium: estCIPrem2,
       estimatedMIPremium: estMIPrem2,
       totalHealthPremium: totalHealthPrem2,
@@ -639,6 +690,7 @@ export function calculate(input: UserInput): InsuranceResult {
       ciGap: childCIGap,
       ciTerm: childCITerm,
       recommendedMIType: childMIType,
+      recommendedMIReason: childMIReason,
       miTerm: childMITerm,
       recommendedAccidentCoverage: childAccident,
       priority: childPriority,
@@ -660,6 +712,7 @@ export function calculate(input: UserInput): InsuranceResult {
       ciGap: parentCIGap,
       ciTerm: parentCITerm,
       recommendedMIType: parentRecommendedMI,
+      recommendedMIReason: parentMIReason,
       miTerm: parentMITerm,
       recommendedAccidentCoverage: parentAccident,
       priority: parentPriority,

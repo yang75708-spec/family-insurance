@@ -178,7 +178,7 @@ function PersonTabs({ result, color }: { result: Record<string, unknown>; color:
   const [tab, setTab] = useState<"health" | "life" | "pension">("health");
   const tabs = [{ k: "health" as const, l: "健康险" }, { k: "life" as const, l: "寿险" }, { k: "pension" as const, l: "养老金" }];
   const panels: Record<string, React.ReactNode> = {
-    health: (<><R label="建议重疾险保额" value={`${Number(result.recommendedCICoverage).toFixed(0)} 万元`} /><R label="重疾险缺口" value={`${Number(result.ciGap).toFixed(0)} 万元`} trend={Number(result.ciGap) > 20 ? "bad" : "good"} /><R label="建议医疗险类型" value={String(result.recommendedMIType)} /><R label="医疗险缺口" value={`${Number(result.miGap).toFixed(1)} 万元`} trend={Number(result.miGap) > 10 ? "bad" : "good"} /><R label="重疾险年保费" value={`${Number(result.estimatedCIPremium).toFixed(2)} 万元`} /><R label="预算检验" value={String(result.healthBudgetResult)} trend={String(result.healthBudgetResult).includes("✅") ? "good" : "bad"} /></>),
+    health: (<><R label="建议重疾险保额" value={`${Number(result.recommendedCICoverage).toFixed(0)} 万元`} /><R label="重疾险缺口" value={`${Number(result.ciGap).toFixed(0)} 万元`} trend={Number(result.ciGap) > 20 ? "bad" : "good"} /><R label="建议医疗险类型" value={String(result.recommendedMIType)} />{String(result.recommendedMIReason) && <div className="text-[10px] text-text-tertiary leading-tight mt-0.5 mb-2 pl-1 border-l-2 border-sage-200/60">{String(result.recommendedMIReason)}</div>}<R label="医疗险缺口" value={`${Number(result.miGap).toFixed(1)} 万元`} trend={Number(result.miGap) > 10 ? "bad" : "good"} /><R label="重疾险年保费" value={`${Number(result.estimatedCIPremium).toFixed(2)} 万元`} /><R label="预算检验" value={String(result.healthBudgetResult)} trend={String(result.healthBudgetResult).includes("✅") ? "good" : "bad"} /></>),
     life: (<><R label="建议寿险保额" value={`${Number(result.recommendedLifeCoverage).toFixed(0)} 万元`} /><R label="寿险缺口" value={`${Number(result.lifeGap).toFixed(0)} 万元`} trend={Number(result.lifeGap) > 50 ? "bad" : "good"} /><R label="预估年保费" value={`${Number(result.estimatedLifePremium).toFixed(0)} 元`} /><R label="预算检验" value={String(result.lifeBudgetResult)} trend={String(result.lifeBudgetResult).includes("✅") ? "good" : "bad"} /><R label="配置建议" value={String(result.lifeTermSuggestion)} /></>),
     pension: (<><R label="建议年补充养老金" value={`${Number(result.recommendedPensionAnnual).toFixed(0)} 万元`} /><R label="养老金缺口" value={`${Number(result.pensionGap).toFixed(0)} 万元`} trend={Number(result.pensionGap) > 50 ? "bad" : "good"} /><R label="已有储备终值" value={`${Number(result.existingPensionFV).toFixed(0)} 万元`} /><R label="缴费年限" value={`${Number(result.payYears).toFixed(0)} 年`} /><R label="预算检验" value={String(result.pensionBudgetResult)} trend={String(result.pensionBudgetResult).includes("✅") ? "good" : "bad"} /></>),
   };
@@ -225,8 +225,9 @@ function QuestionItem({ q, val, onChange, index }: { q: Q; val: unknown; onChang
               </div>
             ) : (
               <div className="relative max-w-xs">
-                <input type="number" value={val === 0 || val === null || val === undefined ? '' : Number(val)} onChange={(e) => onChange(q.key, e.target.value === '' ? 0 : Number(e.target.value))}
+                <input type="number" value={Number(val ?? 0)} onChange={(e) => onChange(q.key, e.target.value === '' ? 0 : Number(e.target.value))}
                   min={q.min} max={q.max} step={q.step}
+                  onFocus={(e) => e.target.select()}
                   className="w-full text-sm h-10 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary" />
                 {q.unit && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] text-text-tertiary pointer-events-none font-medium">{q.unit}</span>}
               </div>
@@ -480,16 +481,18 @@ export default function Home() {
                               {checkedTypes.includes('重疾险') && (
                                 <div>
                                   <label className="text-[11px] font-medium text-text-tertiary mb-1 block">已有重疾险保额（万元）</label>
-                                  <input type="number" value={Number(input[ciKey] ?? 0) === 0 ? '' : Number(input[ciKey] ?? 0)} min={0}
+                                  <input type="number" value={Number(input[ciKey] ?? 0)} min={0}
                                     onChange={(e) => handle(ciKey, e.target.value === '' ? 0 : Number(e.target.value))}
+                                    onFocus={(e) => e.target.select()}
                                     className="w-full text-sm h-9 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none" />
                                 </div>
                               )}
                               {(checkedTypes.includes('百万医疗') || checkedTypes.includes('中端医疗') || checkedTypes.includes('高端医疗')) && (
                                 <div>
                                   <label className="text-[11px] font-medium text-text-tertiary mb-1 block">已有医疗险保额（万元）</label>
-                                  <input type="number" value={Number(input[miKey] ?? 0) === 0 ? '' : Number(input[miKey] ?? 0)} min={0}
+                                  <input type="number" value={Number(input[miKey] ?? 0)} min={0}
                                     onChange={(e) => handle(miKey, e.target.value === '' ? 0 : Number(e.target.value))}
+                                    onFocus={(e) => e.target.select()}
                                     className="w-full text-sm h-9 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none" />
                                 </div>
                               )}
@@ -583,14 +586,15 @@ export default function Home() {
                     <p className="text-xs text-text-tertiary mb-4">根据您的收入水平和已有保障，按行业标准推荐的医疗险类型</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {[
-                        { label: "第一经济支柱", income: input.firstPersonIncome, rec: result.firstPerson.recommendedMIType },
-                        { label: "第二经济支柱", income: input.secondPersonIncome, rec: result.secondPerson.recommendedMIType },
+                        { label: "第一经济支柱", income: input.firstPersonIncome, rec: result.firstPerson.recommendedMIType, reason: result.firstPerson.recommendedMIReason },
+                        { label: "第二经济支柱", income: input.secondPersonIncome, rec: result.secondPerson.recommendedMIType, reason: result.secondPerson.recommendedMIReason },
                       ].map((p) => (
                         <div key={p.label} className="bg-sage-50/60 rounded-xl p-4 border border-sage-100/50">
                           <div className="text-xs font-semibold text-text-primary mb-2">{p.label}</div>
                           <div className="space-y-1.5 text-xs text-text-secondary">
                             <div className="flex justify-between"><span>年收入</span><span className="font-medium text-text-primary">{p.income}</span></div>
                             <div className="flex justify-between"><span>推荐配置</span><span className="font-medium text-sage-600">{p.rec}</span></div>
+                            {p.reason && <div className="text-[10px] text-text-tertiary leading-snug mt-1.5 pt-1.5 border-t border-sage-200/40">{p.reason}</div>}
                           </div>
                         </div>
                       ))}
