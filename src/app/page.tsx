@@ -206,7 +206,7 @@ function QuestionItem({ q, val, onChange, index }: { q: Q; val: unknown; onChang
               </div>
             ) : (
               <div className="relative max-w-xs">
-                <input type="text" inputMode="decimal" value={val === 0 ? '' : String(val ?? '')} onChange={(e) => { const r = e.target.value; if (r === '' || r === '-') { onChange(q.key, 0); return; } if (/^-?\d*\.?\d*$/.test(r)) onChange(q.key, Number(r)); }}
+                <input type="text" inputMode="decimal" value={val === undefined || val === null ? '' : String(val)} onChange={(e) => { const r = e.target.value; if (r === '' || r === '-') { onChange(q.key, 0); return; } if (/^-?\d*\.?\d*$/.test(r)) onChange(q.key, Number(r)); }}
                   min={q.min} max={q.max} step={q.step}
                   onFocus={(e) => e.target.select()}
                   className="w-full text-sm h-10 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary" />
@@ -247,7 +247,7 @@ function PensionNumberItem({ label, desc, unit, value, min, max, step, onChange 
         {desc && <span className="text-text-tertiary/60"> — {desc}</span>}
       </label>
       <div className="relative">
-        <input type="text" inputMode="decimal" value={value === 0 ? '' : String(value)} onChange={(e) => { const r = e.target.value; if (r === '' || r === '-') { onChange(0); return; } if (/^-?\d*\.?\d*$/.test(r)) onChange(Number(r)); }}
+        <input type="text" inputMode="decimal" value={value === undefined || value === null ? '' : String(value)} onChange={(e) => { const r = e.target.value; if (r === '' || r === '-') { onChange(0); return; } if (/^-?\d*\.?\d*$/.test(r)) onChange(Number(r)); }}
           min={min} max={max} step={step}
           onFocus={(e) => e.target.select()}
           className="w-full text-sm h-10 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary" />
@@ -594,7 +594,7 @@ export default function Home() {
                               {checkedTypes.includes('重疾险') && (
                                 <div>
                                   <label className="text-[11px] font-medium text-text-tertiary mb-1 block">已有重疾险保额（万元）</label>
-                                  <input type="text" inputMode="decimal" value={input[ciKey] === 0 || input[ciKey] === undefined ? '' : String(input[ciKey])} min={0}
+                                  <input type="text" inputMode="decimal" value={input[ciKey] === undefined || input[ciKey] === null ? '' : String(input[ciKey])} min={0}
                                     onChange={(e) => { const r = e.target.value; if (r === '' || r === '-') { handle(ciKey, 0); return; } if (/^\d*\.?\d*$/.test(r)) handle(ciKey, Number(r)); }}
                                     onFocus={(e) => e.target.select()}
                                     className="w-full text-sm h-9 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none" />
@@ -603,7 +603,7 @@ export default function Home() {
                               {(checkedTypes.includes('百万医疗') || checkedTypes.includes('中端医疗') || checkedTypes.includes('高端医疗')) && (
                                 <div>
                                   <label className="text-[11px] font-medium text-text-tertiary mb-1 block">已有医疗险保额（万元）</label>
-                                  <input type="text" inputMode="decimal" value={input[miKey] === 0 || input[miKey] === undefined ? '' : String(input[miKey])} min={0}
+                                  <input type="text" inputMode="decimal" value={input[miKey] === undefined || input[miKey] === null ? '' : String(input[miKey])} min={0}
                                     onChange={(e) => { const r = e.target.value; if (r === '' || r === '-') { handle(miKey, 0); return; } if (/^\d*\.?\d*$/.test(r)) handle(miKey, Number(r)); }}
                                     onFocus={(e) => e.target.select()}
                                     className="w-full text-sm h-9 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none" />
