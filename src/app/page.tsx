@@ -1182,15 +1182,23 @@ export default function Home() {
         .print-only { display: none; }
 
         @media print {
-          /* 隐藏屏幕内容 */
-          .screen-only { display: none !important; }
+          html, body { background: white !important; height: auto !important; margin: 0 !important; padding: 0 !important; }
 
-          /* 显示打印内容 */
+          /* 用 visibility 控制，避免 display:none 的继承阻断问题 */
+          body * { visibility: hidden !important; }
+
+          /* 只显示打印区域 */
+          .print-only, .print-only * {
+            visibility: visible !important;
+          }
           .print-only {
             display: block !important;
+            position: absolute;
+            top: 0; left: 0; width: 100%;
             font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
             color: #1a1a1a;
           }
+          .screen-only { display: none !important; }
 
           @page { margin: 1.5cm 1.2cm; }
           .print-page-break { page-break-after: always; }
@@ -1198,35 +1206,35 @@ export default function Home() {
           /* 封面 */
           .print-cover { text-align: center; padding-top: 2.5cm; }
           .print-logo { font-size: 48px; margin-bottom: 10px; }
-          .print-title { font-size: 26px; font-weight: 700; margin: 0 0 6px; letter-spacing: 2px; color: #1a1a1a; }
-          .print-date { font-size: 11px; color: #666; margin-bottom: 28px; }
+          .print-title { font-size: 26px; font-weight: 700; margin: 0 0 6px; letter-spacing: 2px; color: #000; }
+          .print-date { font-size: 11px; color: #555; margin-bottom: 28px; }
           .print-cover-tags { display: flex; justify-content: center; gap: 12px; margin-bottom: 32px; flex-wrap: wrap; }
-          .print-tag { font-size: 12px; background: #f3f4f6; padding: 5px 14px; border-radius: 16px; color: #333; }
-          .print-tag strong { color: #111; }
+          .print-tag { font-size: 12px; background: #eee; padding: 5px 14px; border-radius: 16px; color: #222; }
+          .print-tag strong { color: #000; }
           .print-summary-table { width: 55%; margin: 0 auto; border-collapse: collapse; font-size: 13px; }
-          .print-summary-table td { padding: 7px 14px; border-bottom: 1px solid #d1d5db; }
-          .print-summary-table .print-label { text-align: left; color: #555; }
-          .print-summary-table .print-value { text-align: right; font-weight: 600; color: #1a1a1a; }
+          .print-summary-table td { padding: 7px 14px; border-bottom: 1px solid #ccc; }
+          .print-summary-table .print-label { text-align: left; color: #444; }
+          .print-summary-table .print-value { text-align: right; font-weight: 600; color: #000; }
 
           /* 人物分页 */
-          .print-person-title { font-size: 18px; font-weight: 700; margin: 0 0 4px; padding-bottom: 6px; border-bottom: 2px solid #333; color: #1a1a1a; }
-          .print-person-info { font-size: 11px; color: #666; margin-bottom: 16px; padding-top: 4px; }
-          .print-info-sep { margin: 0 8px; color: #bbb; }
+          .print-person-title { font-size: 18px; font-weight: 700; margin: 0 0 4px; padding-bottom: 6px; border-bottom: 2px solid #222; color: #000; }
+          .print-person-info { font-size: 11px; color: #555; margin-bottom: 16px; padding-top: 4px; }
+          .print-info-sep { margin: 0 8px; color: #aaa; }
 
           /* 详情表格 */
           .print-detail-table { width: 100%; border-collapse: collapse; font-size: 11px; }
           .print-detail-table th {
-            background: #e5e7eb; padding: 6px 8px; text-align: left; font-weight: 600;
-            border: 1px solid #c0c4cc; font-size: 11px; color: #1a1a1a;
+            background: #ddd; padding: 6px 8px; text-align: left; font-weight: 600;
+            border: 1px solid #aaa; font-size: 11px; color: #000;
           }
           .print-detail-table td {
-            padding: 6px 8px; border: 1px solid #c0c4cc; vertical-align: top; line-height: 1.5; color: #333;
+            padding: 6px 8px; border: 1px solid #aaa; vertical-align: top; line-height: 1.5; color: #222;
           }
-          .print-detail-table .print-label { font-weight: 600; color: #1a1a1a; white-space: nowrap; }
-          .print-th-cat { background: #d1d5db !important; }
-          .print-sub { font-size: 10px; color: #666; }
-          .print-note { margin-top: 10px; font-size: 10px; color: #666; padding: 6px 10px; background: #f3f4f6; border-left: 3px solid #9ca3af; }
-          .print-total-row td { font-weight: 700; background: #f3f4f6; border-top: 2px solid #333; color: #1a1a1a; }
+          .print-detail-table .print-label { font-weight: 600; color: #000; white-space: nowrap; }
+          .print-th-cat { background: #ccc !important; }
+          .print-sub { font-size: 10px; color: #555; }
+          .print-note { margin-top: 10px; font-size: 10px; color: #555; padding: 6px 10px; background: #f5f5f5; border-left: 3px solid #999; }
+          .print-total-row td { font-weight: 700; background: #eee; border-top: 2px solid #222; color: #000; }
         }
       `}</style>
     </>
