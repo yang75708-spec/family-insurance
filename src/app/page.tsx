@@ -178,7 +178,7 @@ function PersonTabs({ result, color }: { result: Record<string, unknown>; color:
   );
 }
 
-function QuestionItem({ q, val, onChange, index }: { q: Q; val: unknown; onChange: (k: string, v: unknown) => void; index: number }) {
+function QuestionItem({ q, val, onChange, rawVal, onTextChange, onTextBlur, index }: { q: Q; val: unknown; onChange: (k: string, v: unknown) => void; rawVal?: string; onTextChange?: (k: string, raw: string) => void; onTextBlur?: (k: string) => void; index: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -206,9 +206,10 @@ function QuestionItem({ q, val, onChange, index }: { q: Q; val: unknown; onChang
               </div>
             ) : (
               <div className="relative max-w-xs">
-                <input type="text" inputMode="decimal" value={val === undefined || val === null ? '' : String(val)} onChange={(e) => { const r = e.target.value; if (r === '' || r === '-') { onChange(q.key, 0); return; } if (/^-?\d*\.?\d*$/.test(r)) onChange(q.key, Number(r)); }}
+                <input type="text" inputMode="decimal" value={rawVal ?? (val === undefined || val === null ? '' : String(val))} onChange={(e) => { const r = e.target.value; if (/^-?\d*\.?\d*$/.test(r)) onTextChange?.(q.key, r); }}
                   min={q.min} max={q.max} step={q.step}
                   onFocus={(e) => e.target.select()}
+                  onBlur={() => onTextBlur?.(q.key)}
                   className="w-full text-sm h-10 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary" />
                 {q.unit && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] text-text-tertiary pointer-events-none font-medium">{q.unit}</span>}
               </div>
@@ -236,9 +237,9 @@ function QuestionItem({ q, val, onChange, index }: { q: Q; val: unknown; onChang
 }
 
 // ─── Pension Helpers ───
-function PensionNumberItem({ label, desc, unit, value, min, max, step, onChange }: {
-  label: string; desc?: string; unit: string; value: number; min?: number; max?: number; step?: number;
-  onChange: (v: number) => void;
+function PensionNumberItem({ label, desc, unit, value, rawVal, min, max, step, onChange, onTextChange, onTextBlur, textKey }: {
+  label: string; desc?: string; unit: string; value: number; rawVal?: string; min?: number; max?: number; step?: number;
+  onChange: (v: number) => void; onTextChange?: (k: string, raw: string) => void; onTextBlur?: (k: string) => void; textKey?: string;
 }) {
   return (
     <div>
@@ -247,9 +248,12 @@ function PensionNumberItem({ label, desc, unit, value, min, max, step, onChange 
         {desc && <span className="text-text-tertiary/60"> — {desc}</span>}
       </label>
       <div className="relative">
-        <input type="text" inputMode="decimal" value={value === undefined || value === null ? '' : String(value)} onChange={(e) => { const r = e.target.value; if (r === '' || r === '-') { onChange(0); return; } if (/^-?\d*\.?\d*$/.test(r)) onChange(Number(r)); }}
+        <input type="text" inputMode="decimal"
+          value={rawVal ?? (value === undefined || value === null ? '' : String(value))}
+          onChange={(e) => { const r = e.target.value; if (/^-?\d*\.?\d*$/.test(r)) onTextChange?.(textKey ?? '', r); }}
           min={min} max={max} step={step}
           onFocus={(e) => e.target.select()}
+          onBlur={() => textKey && onTextBlur?.(textKey)}
           className="w-full text-sm h-10 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary" />
         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] text-text-tertiary pointer-events-none font-medium">{unit}</span>
       </div>
@@ -304,10 +308,28 @@ export default function Home() {
   const [showRestore, setShowRestore] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
   const [savedData, setSavedData] = useState<UserInput | null>(null);
+  const [rawValues, setRawValues] = useState<Record<string, string>>({});
 
   const result = useMemo<InsuranceResult>(() => calculate(input), [input]);
   const handle = useCallback((k: string, v: unknown) => setInput((p) => setN(p, k, v)), []);
+
+  // 处理文本数字输入：保留原始字符串用于显示，延迟解析为数字
+  const handleTextInput = useCallback((k: string, raw: string) => {
+    setRawValues(p => ({ ...p, [k]: raw }));
+    if (raw === '' || raw === '-') {
+      setInput(p => setN(p, k, 0));
+    } else if (!raw.endsWith('.')) {
+      const n = Number(raw);
+      if (!isNaN(n)) setInput(p => setN(p, k, n));
+    }
+    // 如果以 . 结尾，保留原始字符串显示但不更新数字状态
+  }, []);
+
   const goTo = (s: number) => { setDir(s > step ? 1 : -1); setStep(s); };
+
+  const clearRawVal = useCallback((k: string) => {
+    setRawValues(p => { const n = { ...p }; delete n[k]; return n; });
+  }, []);
 
   // 恢复检测：检查 localStorage 是否有保存的数据
   useEffect(() => {
@@ -495,7 +517,8 @@ export default function Home() {
                   </motion.div>
                   <div className="space-y-4">
                     {PAGES[step - 1].questions.map((q, i) => (
-                      <QuestionItem key={q.key} q={q} val={(input as unknown as Record<string, unknown>)[q.key]} onChange={handle} index={i} />
+                      <QuestionItem key={q.key} q={q} val={(input as unknown as Record<string, unknown>)[q.key]} onChange={handle}
+                        rawVal={rawValues[q.key]} onTextChange={handleTextInput} onTextBlur={clearRawVal} index={i} />
                     ))}
                   </div>
                 </div>
@@ -522,15 +545,15 @@ export default function Home() {
                         第一经济支柱
                       </h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <PensionNumberItem label="计划退休年龄" desc="越早退休需要储备越多养老金" unit="岁" value={input.firstPersonRetireAge} min={50} max={70} onChange={(v) => handle("firstPersonRetireAge", v)} />
-                        <PensionNumberItem label="退休后生活年限" desc="预计退休后需要维持生活质量的年数" unit="年" value={input.firstPersonRetireYears} min={5} max={40} onChange={(v) => handle("firstPersonRetireYears", v)} />
-                        <PensionNumberItem label="退休后年生活目标" desc="退休后每年需要的生活费用" unit="万元" value={input.firstPersonRetireGoal} min={0} step={0.5} onChange={(v) => handle("firstPersonRetireGoal", v)} />
+                        <PensionNumberItem label="计划退休年龄" desc="越早退休需要储备越多养老金" unit="岁" value={input.firstPersonRetireAge} min={50} max={70} rawVal={rawValues['firstPersonRetireAge']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="firstPersonRetireAge" onChange={(v) => handle("firstPersonRetireAge", v)} />
+                        <PensionNumberItem label="退休后生活年限" desc="预计退休后需要维持生活质量的年数" unit="年" value={input.firstPersonRetireYears} min={5} max={40} rawVal={rawValues['firstPersonRetireYears']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="firstPersonRetireYears" onChange={(v) => handle("firstPersonRetireYears", v)} />
+                        <PensionNumberItem label="退休后年生活目标" desc="退休后每年需要的生活费用" unit="万元" value={input.firstPersonRetireGoal} min={0} step={0.5} rawVal={rawValues['firstPersonRetireGoal']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="firstPersonRetireGoal" onChange={(v) => handle("firstPersonRetireGoal", v)} />
                         <PensionToggle label="是否已有养老资金" value={input.firstPersonHasPension} onChange={(v) => handle("firstPersonHasPension", v)} />
                       </div>
                       {input.firstPersonHasPension && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-4 border-t border-sage-100">
-                          <PensionNumberItem label="养老专项存款" desc="已预留的养老资金" unit="万元" value={input.firstPersonPensionFund} min={0} onChange={(v) => handle("firstPersonPensionFund", v)} />
-                          <PensionNumberItem label="商业养老金价值" unit="万元" value={input.firstPersonComPension} min={0} onChange={(v) => handle("firstPersonComPension", v)} />
+                          <PensionNumberItem label="养老专项存款" desc="已预留的养老资金" unit="万元" value={input.firstPersonPensionFund} min={0} rawVal={rawValues['firstPersonPensionFund']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="firstPersonPensionFund" onChange={(v) => handle("firstPersonPensionFund", v)} />
+                          <PensionNumberItem label="商业养老金价值" unit="万元" value={input.firstPersonComPension} min={0} rawVal={rawValues['firstPersonComPension']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="firstPersonComPension" onChange={(v) => handle("firstPersonComPension", v)} />
                         </motion.div>
                       )}
                     </motion.div>
@@ -542,15 +565,15 @@ export default function Home() {
                         第二经济支柱
                       </h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <PensionNumberItem label="计划退休年龄" unit="岁" value={input.secondPersonRetireAge} min={50} max={70} onChange={(v) => handle("secondPersonRetireAge", v)} />
-                        <PensionNumberItem label="退休后生活年限" unit="年" value={input.secondPersonRetireYears} min={5} max={40} onChange={(v) => handle("secondPersonRetireYears", v)} />
-                        <PensionNumberItem label="退休后年生活目标" unit="万元" value={input.secondPersonRetireGoal} min={0} step={0.5} onChange={(v) => handle("secondPersonRetireGoal", v)} />
+                        <PensionNumberItem label="计划退休年龄" unit="岁" value={input.secondPersonRetireAge} min={50} max={70} rawVal={rawValues['secondPersonRetireAge']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="secondPersonRetireAge" onChange={(v) => handle("secondPersonRetireAge", v)} />
+                        <PensionNumberItem label="退休后生活年限" unit="年" value={input.secondPersonRetireYears} min={5} max={40} rawVal={rawValues['secondPersonRetireYears']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="secondPersonRetireYears" onChange={(v) => handle("secondPersonRetireYears", v)} />
+                        <PensionNumberItem label="退休后年生活目标" unit="万元" value={input.secondPersonRetireGoal} min={0} step={0.5} rawVal={rawValues['secondPersonRetireGoal']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="secondPersonRetireGoal" onChange={(v) => handle("secondPersonRetireGoal", v)} />
                         <PensionToggle label="是否已有养老资金" value={input.secondPersonHasPension} onChange={(v) => handle("secondPersonHasPension", v)} />
                       </div>
                       {input.secondPersonHasPension && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-4 border-t border-sage-100">
-                          <PensionNumberItem label="养老专项存款" desc="已预留的养老资金" unit="万元" value={input.secondPersonPensionFund} min={0} onChange={(v) => handle("secondPersonPensionFund", v)} />
-                          <PensionNumberItem label="商业养老金价值" unit="万元" value={input.secondPersonComPension} min={0} onChange={(v) => handle("secondPersonComPension", v)} />
+                          <PensionNumberItem label="养老专项存款" desc="已预留的养老资金" unit="万元" value={input.secondPersonPensionFund} min={0} rawVal={rawValues['secondPersonPensionFund']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="secondPersonPensionFund" onChange={(v) => handle("secondPersonPensionFund", v)} />
+                          <PensionNumberItem label="商业养老金价值" unit="万元" value={input.secondPersonComPension} min={0} rawVal={rawValues['secondPersonComPension']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="secondPersonComPension" onChange={(v) => handle("secondPersonComPension", v)} />
                         </motion.div>
                       )}
                     </motion.div>
@@ -563,14 +586,14 @@ export default function Home() {
                       </h3>
                       <p className="text-[11px] text-text-tertiary mb-4">社保养老金和个人养老金账户会纳入已有储备计算</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <PensionNumberItem label="第一支柱个人养老金账户" desc="个人养老金账户现有余额" unit="万元" value={input.firstPersonPersonalPension} min={0} onChange={(v) => handle("firstPersonPersonalPension", v)} />
-                        <PensionNumberItem label="第一支柱社保月养老金估计" desc="预计退休后每月可领取" unit="万元" value={input.firstPersonSocialPension} min={0} onChange={(v) => handle("firstPersonSocialPension", v)} />
-                        <PensionNumberItem label="第一支柱缴费年限" desc="计划缴纳养老金的年数" unit="年" value={input.firstPersonPayYears} min={0} max={40} onChange={(v) => handle("firstPersonPayYears", v)} />
-                        <PensionNumberItem label="第一支柱年预算" unit="万元" value={input.firstPersonPensionBudget} min={0} onChange={(v) => handle("firstPersonPensionBudget", v)} />
-                        <PensionNumberItem label="第二支柱个人养老金账户" unit="万元" value={input.secondPersonPersonalPension} min={0} onChange={(v) => handle("secondPersonPersonalPension", v)} />
-                        <PensionNumberItem label="第二支柱社保月养老金估计" unit="万元" value={input.secondPersonSocialPension} min={0} onChange={(v) => handle("secondPersonSocialPension", v)} />
-                        <PensionNumberItem label="第二支柱缴费年限" unit="年" value={input.secondPersonPayYears} min={0} max={40} onChange={(v) => handle("secondPersonPayYears", v)} />
-                        <PensionNumberItem label="第二支柱年预算" unit="万元" value={input.secondPersonPensionBudget} min={0} onChange={(v) => handle("secondPersonPensionBudget", v)} />
+                        <PensionNumberItem label="第一支柱个人养老金账户" desc="个人养老金账户现有余额" unit="万元" value={input.firstPersonPersonalPension} min={0} rawVal={rawValues['firstPersonPersonalPension']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="firstPersonPersonalPension" onChange={(v) => handle("firstPersonPersonalPension", v)} />
+                        <PensionNumberItem label="第一支柱社保月养老金估计" desc="预计退休后每月可领取" unit="万元" value={input.firstPersonSocialPension} min={0} rawVal={rawValues['firstPersonSocialPension']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="firstPersonSocialPension" onChange={(v) => handle("firstPersonSocialPension", v)} />
+                        <PensionNumberItem label="第一支柱缴费年限" desc="计划缴纳养老金的年数" unit="年" value={input.firstPersonPayYears} min={0} max={40} rawVal={rawValues['firstPersonPayYears']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="firstPersonPayYears" onChange={(v) => handle("firstPersonPayYears", v)} />
+                        <PensionNumberItem label="第一支柱年预算" unit="万元" value={input.firstPersonPensionBudget} min={0} rawVal={rawValues['firstPersonPensionBudget']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="firstPersonPensionBudget" onChange={(v) => handle("firstPersonPensionBudget", v)} />
+                        <PensionNumberItem label="第二支柱个人养老金账户" unit="万元" value={input.secondPersonPersonalPension} min={0} rawVal={rawValues['secondPersonPersonalPension']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="secondPersonPersonalPension" onChange={(v) => handle("secondPersonPersonalPension", v)} />
+                        <PensionNumberItem label="第二支柱社保月养老金估计" unit="万元" value={input.secondPersonSocialPension} min={0} rawVal={rawValues['secondPersonSocialPension']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="secondPersonSocialPension" onChange={(v) => handle("secondPersonSocialPension", v)} />
+                        <PensionNumberItem label="第二支柱缴费年限" unit="年" value={input.secondPersonPayYears} min={0} max={40} rawVal={rawValues['secondPersonPayYears']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="secondPersonPayYears" onChange={(v) => handle("secondPersonPayYears", v)} />
+                        <PensionNumberItem label="第二支柱年预算" unit="万元" value={input.secondPersonPensionBudget} min={0} rawVal={rawValues['secondPersonPensionBudget']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="secondPersonPensionBudget" onChange={(v) => handle("secondPersonPensionBudget", v)} />
                       </div>
                     </motion.div>
                   </div>
@@ -656,18 +679,20 @@ export default function Home() {
                               {checkedTypes.includes('重疾险') && (
                                 <div>
                                   <label className="text-[11px] font-medium text-text-tertiary mb-1 block">已有重疾险保额（万元）</label>
-                                  <input type="text" inputMode="decimal" value={input[ciKey] === undefined || input[ciKey] === null ? '' : String(input[ciKey])} min={0}
-                                    onChange={(e) => { const r = e.target.value; if (r === '' || r === '-') { handle(ciKey, 0); return; } if (/^\d*\.?\d*$/.test(r)) handle(ciKey, Number(r)); }}
+                                  <input type="text" inputMode="decimal" value={rawValues[ciKey] ?? (input[ciKey] === undefined || input[ciKey] === null ? '' : String(input[ciKey]))} min={0}
+                                    onChange={(e) => { const r = e.target.value; if (/^\d*\.?\d*$/.test(r)) handleTextInput(ciKey, r); }}
                                     onFocus={(e) => e.target.select()}
+                                    onBlur={() => clearRawVal(ciKey)}
                                     className="w-full text-sm h-9 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none" />
                                 </div>
                               )}
                               {(checkedTypes.includes('百万医疗') || checkedTypes.includes('中端医疗') || checkedTypes.includes('高端医疗')) && (
                                 <div>
                                   <label className="text-[11px] font-medium text-text-tertiary mb-1 block">已有医疗险保额（万元）</label>
-                                  <input type="text" inputMode="decimal" value={input[miKey] === undefined || input[miKey] === null ? '' : String(input[miKey])} min={0}
-                                    onChange={(e) => { const r = e.target.value; if (r === '' || r === '-') { handle(miKey, 0); return; } if (/^\d*\.?\d*$/.test(r)) handle(miKey, Number(r)); }}
+                                  <input type="text" inputMode="decimal" value={rawValues[miKey] ?? (input[miKey] === undefined || input[miKey] === null ? '' : String(input[miKey]))} min={0}
+                                    onChange={(e) => { const r = e.target.value; if (/^\d*\.?\d*$/.test(r)) handleTextInput(miKey, r); }}
                                     onFocus={(e) => e.target.select()}
+                                    onBlur={() => clearRawVal(miKey)}
                                     className="w-full text-sm h-9 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none" />
                                 </div>
                               )}
