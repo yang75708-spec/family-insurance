@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -275,15 +275,77 @@ function PensionToggle({ label, value, onChange }: { label: string; value: boole
   );
 }
 
+// ─── Restore Dialog ───
+function RestoreDialog({ onRestore, onDismiss }: { onRestore: () => void; onDismiss: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm">
+      <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} className="glass rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl border border-white/40">
+        <div className="w-12 h-12 rounded-2xl bg-sage-50 flex items-center justify-center mb-4">
+          <svg className="w-6 h-6 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+        </div>
+        <h3 className="text-lg font-bold text-text-primary font-display mb-2">恢复上次数据？</h3>
+        <p className="text-sm text-text-secondary mb-6 leading-relaxed">检测到您之前填写的数据，是否恢复到上次的状态？</p>
+        <div className="flex gap-3">
+          <button onClick={onRestore}
+            className="flex-1 px-4 py-2.5 rounded-button bg-sage-300/80 text-text-primary font-medium text-sm hover:bg-sage-300 transition-all">是，恢复数据</button>
+          <button onClick={onDismiss}
+            className="flex-1 px-4 py-2.5 rounded-button bg-white/60 text-text-secondary font-medium text-sm border border-sage-200/50 hover:bg-white/80 transition-all">否，重新填写</button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── Home ───
 export default function Home() {
   const [input, setInput] = useState<UserInput>(defaultInput);
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(0);
+  const [showRestore, setShowRestore] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
+  const [savedData, setSavedData] = useState<UserInput | null>(null);
 
   const result = useMemo<InsuranceResult>(() => calculate(input), [input]);
   const handle = useCallback((k: string, v: unknown) => setInput((p) => setN(p, k, v)), []);
   const goTo = (s: number) => { setDir(s > step ? 1 : -1); setStep(s); };
+
+  // 恢复检测：检查 localStorage 是否有保存的数据
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('family-insurance-data');
+      if (raw) {
+        const data = JSON.parse(raw) as UserInput;
+        // 简单校验：至少 firstPersonAge 存在且为数字
+        if (typeof data.firstPersonAge === 'number') {
+          setSavedData(data);
+          setShowRestore(true);
+        }
+      }
+    } catch { /* ignore parse errors */ }
+  }, []);
+
+  // 自动保存：input 变化后 1.5s 防抖存入 localStorage
+  useEffect(() => {
+    setSaveStatus('saving');
+    const timer = setTimeout(() => {
+      localStorage.setItem('family-insurance-data', JSON.stringify(input));
+      setSaveStatus('saved');
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [input]);
+
+  // 用于恢复的临时存储
+  const handleRestore = useCallback(() => {
+    if (savedData) setInput(savedData);
+    setShowRestore(false);
+    setSavedData(null);
+  }, [savedData]);
+
+  const handleDismissRestore = useCallback(() => {
+    localStorage.removeItem('family-insurance-data');
+    setShowRestore(false);
+    setSavedData(null);
+  }, []);
 
   const gapData = useMemo(() => [
     { name: "第一支柱", 重疾险缺口: result.firstPerson.ciGap, 医疗险缺口: result.firstPerson.miGap, 寿险缺口: result.firstPerson.lifeGap },
@@ -655,8 +717,23 @@ export default function Home() {
               {step === 6 && (
                 <div className="max-w-4xl mx-auto space-y-6">
                   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-2">
-                    <h1 className="text-2xl font-bold text-text-primary font-display">您的保险配置方案</h1>
-                    <p className="text-sm text-text-tertiary mt-1">基于填写信息生成的个性化建议</p>
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h1 className="text-2xl font-bold text-text-primary font-display">您的保险配置方案</h1>
+                        <p className="text-sm text-text-tertiary mt-1">基于填写信息生成的个性化建议</p>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0 no-print">
+                        <span className="text-[11px] text-sage-500 font-medium bg-sage-50/80 px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                          <span className={cn("w-1.5 h-1.5 rounded-full", saveStatus === 'saving' ? 'bg-amber-400 animate-pulse' : 'bg-sage-400')} />
+                          {saveStatus === 'saving' ? '保存中…' : '已自动保存'}
+                        </span>
+                        <button onClick={() => window.print()}
+                          className="px-4 py-2 rounded-button bg-white/60 text-text-secondary text-sm border border-sage-200/50 hover:bg-white/80 transition-all flex items-center gap-1.5">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                          打印方案
+                        </button>
+                      </div>
+                    </div>
                   </motion.div>
 
                   {/* 概览卡片 */}
@@ -844,6 +921,31 @@ export default function Home() {
             )}
           </div>
       </div>
+
+      {/* 恢复数据弹窗 */}
+      {showRestore && (
+        <RestoreDialog onRestore={handleRestore} onDismiss={handleDismissRestore} />
+      )}
+
+      {/* 打印样式 */}
+      <style>{`
+        @media print {
+          body { background: white !important; }
+          .no-print { display: none !important; }
+          header, .shrink-0:first-of-type, .border-t { display: none !important; }
+          .flex-1.overflow-y-auto { overflow: visible !important; height: auto !important; }
+          .max-w-4xl.mx-auto { max-width: 100% !important; padding: 0 !important; }
+          .h-dvh { height: auto !important; min-height: auto !important; }
+          .glass { background: white !important; backdrop-filter: none !important; box-shadow: none !important; border-color: #e5e7eb !important; }
+          .bg-sage-50\\/60, .bg-sage-50\\/80, .bg-sage-50\\/30 { background: #f9fafb !important; }
+          .fixed { display: none !important; }
+          [class*="bg-black\\/"] { display: none !important; }
+          @page { margin: 1.5cm; }
+          .grid-cols-2.md\\:grid-cols-4 { grid-template-columns: repeat(2, 1fr) !important; }
+          .text-sage-500, .text-sage-600 { color: #374151 !important; }
+          .drop-shadow-sm { box-shadow: none !important; }
+        }
+      `}</style>
     </div>
   );
 }
