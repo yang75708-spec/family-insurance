@@ -672,8 +672,8 @@ export function calculate(input: UserInput): InsuranceResult {
     ? Math.round(weightedPrem / annualIncome * 10000) / 100
     : 99;
 
-  const riskLevel = riskIndex < 3 ? '低风险'
-    : riskIndex <= 8 ? '中等风险'
+  const riskLevel = riskIndex <= 3.5 ? '低风险'
+    : riskIndex <= 9 ? '中等风险'
     : '高风险';
 
   const priority = ciGap1 > 30 || ciGap2 > 30 ? '优先配置重疾险'

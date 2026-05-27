@@ -206,7 +206,7 @@ function QuestionItem({ q, val, onChange, index }: { q: Q; val: unknown; onChang
               </div>
             ) : (
               <div className="relative max-w-xs">
-                <input type="number" value={Number(val ?? 0)} onChange={(e) => onChange(q.key, e.target.value === '' ? 0 : Number(e.target.value))}
+                <input type="text" inputMode="decimal" value={val === 0 ? '' : String(val ?? '')} onChange={(e) => { const r = e.target.value; if (r === '' || r === '-') { onChange(q.key, 0); return; } if (/^-?\d*\.?\d*$/.test(r)) onChange(q.key, Number(r)); }}
                   min={q.min} max={q.max} step={q.step}
                   onFocus={(e) => e.target.select()}
                   className="w-full text-sm h-10 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary" />
@@ -247,8 +247,8 @@ function PensionNumberItem({ label, desc, unit, value, min, max, step, onChange 
         {desc && <span className="text-text-tertiary/60"> — {desc}</span>}
       </label>
       <div className="relative">
-        <input type="number" value={value} min={min} max={max} step={step}
-          onChange={(e) => onChange(e.target.value === '' ? 0 : Number(e.target.value))}
+        <input type="text" inputMode="decimal" value={value === 0 ? '' : String(value)} onChange={(e) => { const r = e.target.value; if (r === '' || r === '-') { onChange(0); return; } if (/^-?\d*\.?\d*$/.test(r)) onChange(Number(r)); }}
+          min={min} max={max} step={step}
           onFocus={(e) => e.target.select()}
           className="w-full text-sm h-10 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary" />
         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] text-text-tertiary pointer-events-none font-medium">{unit}</span>
@@ -594,8 +594,8 @@ export default function Home() {
                               {checkedTypes.includes('重疾险') && (
                                 <div>
                                   <label className="text-[11px] font-medium text-text-tertiary mb-1 block">已有重疾险保额（万元）</label>
-                                  <input type="number" value={Number(input[ciKey] ?? 0)} min={0}
-                                    onChange={(e) => handle(ciKey, e.target.value === '' ? 0 : Number(e.target.value))}
+                                  <input type="text" inputMode="decimal" value={input[ciKey] === 0 || input[ciKey] === undefined ? '' : String(input[ciKey])} min={0}
+                                    onChange={(e) => { const r = e.target.value; if (r === '' || r === '-') { handle(ciKey, 0); return; } if (/^\d*\.?\d*$/.test(r)) handle(ciKey, Number(r)); }}
                                     onFocus={(e) => e.target.select()}
                                     className="w-full text-sm h-9 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none" />
                                 </div>
@@ -603,8 +603,8 @@ export default function Home() {
                               {(checkedTypes.includes('百万医疗') || checkedTypes.includes('中端医疗') || checkedTypes.includes('高端医疗')) && (
                                 <div>
                                   <label className="text-[11px] font-medium text-text-tertiary mb-1 block">已有医疗险保额（万元）</label>
-                                  <input type="number" value={Number(input[miKey] ?? 0)} min={0}
-                                    onChange={(e) => handle(miKey, e.target.value === '' ? 0 : Number(e.target.value))}
+                                  <input type="text" inputMode="decimal" value={input[miKey] === 0 || input[miKey] === undefined ? '' : String(input[miKey])} min={0}
+                                    onChange={(e) => { const r = e.target.value; if (r === '' || r === '-') { handle(miKey, 0); return; } if (/^\d*\.?\d*$/.test(r)) handle(miKey, Number(r)); }}
                                     onFocus={(e) => e.target.select()}
                                     className="w-full text-sm h-9 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none" />
                                 </div>
@@ -777,7 +777,7 @@ export default function Home() {
                       <span>风险指数：</span>
                       <span className="font-bold text-text-primary">{result.riskIndex.toFixed(2)}%</span>
                       <span className={result.riskLevel === "低风险" ? "text-sage-600 font-semibold" : result.riskLevel === "中等风险" ? "text-amber-500 font-semibold" : "text-rose-400 font-semibold"}>{result.riskLevel}</span>
-                      <span className="text-text-tertiary">— &lt;3% 低风险，3-8% 中等风险，&gt;8% 高风险</span>
+                      <span className="text-text-tertiary">— ≤3.5% 低风险，3.5-9% 中等风险，&gt;9% 高风险</span>
                     </div>
                   </motion.div>
 
@@ -835,11 +835,13 @@ export default function Home() {
                   className={cn("w-2 h-2 rounded-full transition-all duration-300", i === step ? "bg-sage-400 scale-125" : i < step ? "bg-sage-300/60" : "bg-sage-200/50")} />
               ))}
             </div>
-            <motion.button onClick={() => goTo(step + 1)} disabled={step === 6}
-              whileHover={step < 6 ? { scale: 1.02 } : {}}
-              className={cn("px-6 py-2.5 text-sm font-medium rounded-button transition-all", step === 6 ? "text-sage-200 cursor-not-allowed" : "bg-sage-300/80 text-text-primary hover:bg-sage-300 hover:shadow-[0_8px_25px_rgba(168,181,162,0.15)]")}>
-              {step === 0 ? "开始配置 →" : step === 5 ? "查看结果 →" : "下一步 →"}
-            </motion.button>
+            {step > 0 && (
+              <motion.button onClick={() => goTo(step + 1)} disabled={step === 6}
+                whileHover={step < 6 ? { scale: 1.02 } : {}}
+                className={cn("px-6 py-2.5 text-sm font-medium rounded-button transition-all", step === 6 ? "text-sage-200 cursor-not-allowed" : "bg-sage-300/80 text-text-primary hover:bg-sage-300 hover:shadow-[0_8px_25px_rgba(168,181,162,0.15)]")}>
+                {step === 5 ? "查看结果 →" : "下一步 →"}
+              </motion.button>
+            )}
           </div>
       </div>
     </div>
