@@ -19,8 +19,13 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - run: touch out/.nojekyll
-      - uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./out
+      - name: Deploy to gh-pages
+        run: |
+          cd out
+          touch .nojekyll
+          git init
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "deploy: $(date '+%Y-%m-%d %H:%M:%S')"
+          git push --force https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} HEAD:refs/heads/gh-pages
