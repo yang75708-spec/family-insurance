@@ -382,7 +382,8 @@ export default function Home() {
   const LABELS = ["欢迎", "家庭信息", "财务状况", "健康险", "寿险", "养老金", "结果"];
 
   return (
-    <div className="h-dvh flex flex-col relative overflow-hidden">
+    <>
+    <div className="h-dvh flex flex-col relative overflow-hidden screen-only">
       {/* 背景氛围光晕 */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full" style={{ background: 'radial-gradient(circle, rgba(168,181,162,0.15) 0%, transparent 70%)', animation: 'softGlow 8s ease-in-out infinite' }} />
@@ -951,6 +952,7 @@ export default function Home() {
       {showRestore && (
         <RestoreDialog onRestore={handleRestore} onDismiss={handleDismissRestore} />
       )}
+      </div>
 
       {/* ─── 打印专用内容 ─── */}
       <div className="print-only">
@@ -1178,38 +1180,55 @@ export default function Home() {
       {/* 打印样式 */}
       <style>{`
         .print-only { display: none; }
+
         @media print {
-          .no-print { display: none !important; }
-          .print-only { display: block !important; }
-          body { background: white !important; margin: 0; padding: 0; }
-          header, .border-t, .fixed, .overflow-y-auto { display: none !important; }
-          .h-dvh { height: auto !important; min-height: auto !important; overflow: visible !important; }
-          @page { margin: 1.8cm 1.5cm; }
+          /* 隐藏屏幕内容 */
+          .screen-only { display: none !important; }
+
+          /* 显示打印内容 */
+          .print-only {
+            display: block !important;
+            font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+            color: #1a1a1a;
+          }
+
+          @page { margin: 1.5cm 1.2cm; }
           .print-page-break { page-break-after: always; }
-          .print-page { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1a1a1a; padding: 0; }
-          .print-cover { text-align: center; padding-top: 3cm; }
-          .print-logo { font-size: 48px; margin-bottom: 12px; }
-          .print-title { font-size: 28px; font-weight: 700; margin: 0 0 8px; letter-spacing: 1px; }
-          .print-date { font-size: 12px; color: #666; margin-bottom: 32px; }
-          .print-cover-tags { display: flex; justify-content: center; gap: 16px; margin-bottom: 36px; flex-wrap: wrap; }
-          .print-tag { font-size: 13px; background: #f3f4f6; padding: 6px 16px; border-radius: 20px; }
-          .print-summary-table { width: 60%; margin: 0 auto; border-collapse: collapse; font-size: 14px; }
-          .print-summary-table td { padding: 8px 16px; border-bottom: 1px solid #e5e7eb; }
-          .print-summary-table .print-label { text-align: left; color: #6b7280; }
-          .print-summary-table .print-value { text-align: right; font-weight: 600; }
-          .print-person-title { font-size: 20px; font-weight: 700; margin: 0 0 4px; padding-bottom: 8px; border-bottom: 2px solid #1a1a1a; }
-          .print-person-info { font-size: 12px; color: #6b7280; margin-bottom: 20px; padding-top: 6px; }
-          .print-info-sep { margin: 0 10px; color: #d1d5db; }
-          .print-detail-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-          .print-detail-table th { background: #f3f4f6; padding: 8px 10px; text-align: left; font-weight: 600; border: 1px solid #d1d5db; font-size: 12px; }
-          .print-detail-table td { padding: 8px 10px; border: 1px solid #d1d5db; vertical-align: top; line-height: 1.5; }
-          .print-detail-table .print-label { font-weight: 600; color: #374151; white-space: nowrap; }
-          .print-th-cat { background: #e5e7eb !important; }
-          .print-sub { font-size: 11px; color: #6b7280; }
-          .print-note { margin-top: 12px; font-size: 11px; color: #6b7280; padding: 8px 12px; background: #f9fafb; border-left: 3px solid #d1d5db; }
-          .print-total-row td { font-weight: 700; background: #f3f4f6; border-top: 2px solid #1a1a1a; }
+
+          /* 封面 */
+          .print-cover { text-align: center; padding-top: 2.5cm; }
+          .print-logo { font-size: 48px; margin-bottom: 10px; }
+          .print-title { font-size: 26px; font-weight: 700; margin: 0 0 6px; letter-spacing: 2px; color: #1a1a1a; }
+          .print-date { font-size: 11px; color: #666; margin-bottom: 28px; }
+          .print-cover-tags { display: flex; justify-content: center; gap: 12px; margin-bottom: 32px; flex-wrap: wrap; }
+          .print-tag { font-size: 12px; background: #f3f4f6; padding: 5px 14px; border-radius: 16px; color: #333; }
+          .print-tag strong { color: #111; }
+          .print-summary-table { width: 55%; margin: 0 auto; border-collapse: collapse; font-size: 13px; }
+          .print-summary-table td { padding: 7px 14px; border-bottom: 1px solid #d1d5db; }
+          .print-summary-table .print-label { text-align: left; color: #555; }
+          .print-summary-table .print-value { text-align: right; font-weight: 600; color: #1a1a1a; }
+
+          /* 人物分页 */
+          .print-person-title { font-size: 18px; font-weight: 700; margin: 0 0 4px; padding-bottom: 6px; border-bottom: 2px solid #333; color: #1a1a1a; }
+          .print-person-info { font-size: 11px; color: #666; margin-bottom: 16px; padding-top: 4px; }
+          .print-info-sep { margin: 0 8px; color: #bbb; }
+
+          /* 详情表格 */
+          .print-detail-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+          .print-detail-table th {
+            background: #e5e7eb; padding: 6px 8px; text-align: left; font-weight: 600;
+            border: 1px solid #c0c4cc; font-size: 11px; color: #1a1a1a;
+          }
+          .print-detail-table td {
+            padding: 6px 8px; border: 1px solid #c0c4cc; vertical-align: top; line-height: 1.5; color: #333;
+          }
+          .print-detail-table .print-label { font-weight: 600; color: #1a1a1a; white-space: nowrap; }
+          .print-th-cat { background: #d1d5db !important; }
+          .print-sub { font-size: 10px; color: #666; }
+          .print-note { margin-top: 10px; font-size: 10px; color: #666; padding: 6px 10px; background: #f3f4f6; border-left: 3px solid #9ca3af; }
+          .print-total-row td { font-weight: 700; background: #f3f4f6; border-top: 2px solid #333; color: #1a1a1a; }
         }
       `}</style>
-    </div>
+    </>
   );
 }
