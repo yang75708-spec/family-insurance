@@ -527,6 +527,7 @@ function buildPrintHtml(input: UserInput, result: InsuranceResult): string {
       </tr>
     </table>
   </div>
+<script>window.onload=function(){setTimeout(function(){window.print()},200);window.onafterprint=function(){window.close()};};</script>
 </body></html>`;
 }
 
@@ -563,12 +564,22 @@ export default function Home() {
 
   const handlePrint = useCallback(() => {
     const html = buildPrintHtml(input, result);
+    // 尝试新窗口打印
     const w = window.open('', '_blank');
     if (w) {
       w.document.write(html);
       w.document.close();
-      w.addEventListener('afterprint', () => w.close());
-      setTimeout(() => { w.print(); }, 300);
+      return;
+    }
+    // popup 被拦截 → iframe 后备
+    const ifr = document.createElement('iframe');
+    ifr.style.cssText = 'position:fixed;top:0;left:-9999px;width:1px;height:1px';
+    document.body.appendChild(ifr);
+    const idoc = ifr.contentDocument || ifr.contentWindow?.document;
+    if (idoc) {
+      idoc.write(html);
+      idoc.close();
+      setTimeout(() => { ifr.contentWindow?.print(); }, 500);
     }
   }, [input, result]);
 
