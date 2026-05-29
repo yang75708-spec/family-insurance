@@ -300,6 +300,236 @@ function RestoreDialog({ onRestore, onDismiss }: { onRestore: () => void; onDism
   );
 }
 
+// ─── 打印 HTML 生成（新窗口独立渲染，避开 Tailwind CSS 干扰） ───
+function buildPrintHtml(input: UserInput, result: InsuranceResult): string {
+  const dateStr = new Date().toLocaleDateString('zh-CN');
+  // 年度保费汇总计算
+  const p1CI = result.firstPerson.estimatedCIPremium;
+  const p1MI = result.firstPerson.estimatedMIPremium;
+  const p1Life = result.firstPerson.estimatedLifePremium / 10000;
+  const p1Pension = result.firstPerson.recommendedPensionAnnual;
+  const p2CI = result.secondPerson.estimatedCIPremium;
+  const p2MI = result.secondPerson.estimatedMIPremium;
+  const p2Life = result.secondPerson.estimatedLifePremium / 10000;
+  const p2Pension = result.secondPerson.recommendedPensionAnnual;
+  const premRows = [
+    { l: "重疾险", p1: p1CI, p2: p2CI },
+    { l: "医疗险", p1: p1MI, p2: p2MI },
+    { l: "寿险", p1: p1Life, p2: p2Life },
+    { l: "养老金", p1: p1Pension, p2: p2Pension },
+  ];
+  const t1 = premRows.reduce((s, r) => s + r.p1, 0);
+  const t2 = premRows.reduce((s, r) => s + r.p2, 0);
+  const premRowsHtml = premRows.map(r =>
+    `<tr><td class="print-label">${r.l}</td><td>${r.p1 > 0 ? r.p1.toFixed(2) : '-'}</td><td>${r.p2 > 0 ? r.p2.toFixed(2) : '-'}</td><td>${(r.p1 + r.p2) > 0 ? (r.p1 + r.p2).toFixed(2) : '-'}</td></tr>`
+  ).join('');
+
+  const css = `
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+      color: #1a1a1a;
+      background: white;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    @page { margin: 1.5cm 1.2cm; }
+    .page { page-break-after: always; padding: 0; }
+    .page:last-child { page-break-after: auto; }
+    .cover { text-align: center; padding-top: 2.5cm; }
+    .logo { font-size: 48px; margin-bottom: 10px; }
+    .title { font-size: 26px; font-weight: 700; margin: 0 0 6px; letter-spacing: 2px; color: #000; }
+    .date { font-size: 11px; color: #555; margin-bottom: 28px; }
+    .tags { display: flex; justify-content: center; gap: 12px; margin-bottom: 32px; flex-wrap: wrap; }
+    .tag { font-size: 12px; background: #eee; padding: 5px 14px; border-radius: 16px; color: #222; }
+    .tag strong { color: #000; }
+    .summary-table { width: 55%; margin: 0 auto; border-collapse: collapse; font-size: 13px; }
+    .summary-table td { padding: 7px 14px; border-bottom: 1px solid #ccc; }
+    .summary-table .label { text-align: left; color: #444; }
+    .summary-table .value { text-align: right; font-weight: 600; color: #000; }
+    .person-title { font-size: 18px; font-weight: 700; margin: 0 0 4px; padding-bottom: 6px; border-bottom: 2px solid #222; color: #000; }
+    .person-info { font-size: 11px; color: #555; margin-bottom: 16px; padding-top: 4px; }
+    .sep { margin: 0 8px; color: #aaa; }
+    .detail-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .detail-table th {
+      background: #ddd; padding: 6px 8px; text-align: left; font-weight: 600;
+      border: 1px solid #aaa; font-size: 11px; color: #000;
+    }
+    .detail-table td {
+      padding: 6px 8px; border: 1px solid #aaa; vertical-align: top; line-height: 1.5; color: #222;
+    }
+    .detail-table .label { font-weight: 600; color: #000; white-space: nowrap; }
+    .th-cat { background: #ccc !important; }
+    .sub { font-size: 10px; color: #555; }
+    .note { margin-top: 10px; font-size: 10px; color: #555; padding: 6px 10px; background: #f5f5f5; border-left: 3px solid #999; }
+    .total-row td { font-weight: 700; background: #eee; border-top: 2px solid #222; color: #000; }
+  `;
+
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>家庭保险配置方案报告</title><style>${css}</style></head>
+<body>
+  <!-- ═══ 封面 ═══ -->
+  <div class="page">
+    <div class="cover">
+      <div class="logo">🏠</div>
+      <h1 class="title">家庭保险配置方案报告</h1>
+      <p class="date">生成日期：${dateStr}</p>
+      <div class="tags">
+        <span class="tag">风险等级：<strong>${result.riskLevel}</strong></span>
+        <span class="tag">风险指数：<strong>${result.riskIndex.toFixed(2)}%</strong></span>
+        <span class="tag">配置优先级：<strong>${result.priority}</strong></span>
+      </div>
+      <table class="summary-table">
+        <tr><td class="label">总保障缺口</td><td class="value">${result.totalGap.toFixed(0)} 万元</td></tr>
+        <tr><td class="label">健康险缺口</td><td class="value">${result.totalHealthGap.toFixed(0)} 万元</td></tr>
+        <tr><td class="label">寿险缺口</td><td class="value">${result.totalLifeGap.toFixed(0)} 万元</td></tr>
+        <tr><td class="label">养老金缺口</td><td class="value">${result.totalPensionGap.toFixed(0)} 万元</td></tr>
+        <tr><td class="label">年度总保费（预估）</td><td class="value">${result.totalAnnualPrem.toFixed(1)} 万元</td></tr>
+        <tr><td class="label">保费/收入比</td><td class="value">${result.premiumToIncomeRatio.toFixed(2)}%</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ 第一经济支柱 ═══ -->
+  <div class="page">
+    <h2 class="person-title">第一经济支柱 · 保障方案</h2>
+    <div class="person-info">
+      <span>${input.firstPersonAge}岁</span><span class="sep">|</span>
+      <span>年收入 ${input.firstPersonIncome}</span><span class="sep">|</span>
+      <span>${input.incomeStability}</span>
+    </div>
+    <table class="detail-table">
+      <tr><th class="th-cat" style="width:18%"></th><th style="width:30%">健康险</th><th style="width:26%">寿险</th><th style="width:26%">养老金</th></tr>
+      <tr><td class="label">建议方案</td>
+        <td>重疾保额 ${result.firstPerson.recommendedCICoverage.toFixed(0)} 万<br><span class="sub">医疗险：${result.firstPerson.recommendedMIType}</span></td>
+        <td>保额 ${result.firstPerson.recommendedLifeCoverage.toFixed(0)} 万<br><span class="sub">${result.firstPerson.lifeTermSuggestion}</span></td>
+        <td>年补充 ${result.firstPerson.recommendedPensionAnnual.toFixed(0)} 万<br><span class="sub">缴费 ${result.firstPerson.payYears} 年</span></td>
+      </tr>
+      <tr><td class="label">保障缺口</td>
+        <td>重疾 ${result.firstPerson.ciGap.toFixed(1)} 万<br><span class="sub">医疗 ${result.firstPerson.miGap.toFixed(1)} 万</span></td>
+        <td>${result.firstPerson.lifeGap.toFixed(0)} 万</td>
+        <td>${result.firstPerson.pensionGap.toFixed(0)} 万</td>
+      </tr>
+      <tr><td class="label">年保费</td>
+        <td>重疾 ${result.firstPerson.estimatedCIPremium.toFixed(2)} 万 / 医疗 ${result.firstPerson.estimatedMIPremium.toFixed(2)} 万<br><span class="sub">合计 ${result.firstPerson.totalHealthPremium.toFixed(2)} 万</span></td>
+        <td>${result.firstPerson.estimatedLifePremium.toFixed(0)} 元</td>
+        <td>${result.firstPerson.recommendedPensionAnnual.toFixed(1)} 万/年</td>
+      </tr>
+      <tr><td class="label">预算检验</td>
+        <td>${result.firstPerson.healthBudgetResult}</td>
+        <td>${result.firstPerson.lifeBudgetResult}</td>
+        <td>${result.firstPerson.pensionBudgetResult}</td>
+      </tr>
+    </table>
+    ${result.firstPerson.recommendedMIReason ? `<div class="note">医疗险说明：${result.firstPerson.recommendedMIReason}</div>` : ''}
+  </div>
+
+  <!-- ═══ 第二经济支柱 ═══ -->
+  <div class="page">
+    <h2 class="person-title">第二经济支柱 · 保障方案</h2>
+    <div class="person-info">
+      <span>${input.secondPersonAge}岁</span><span class="sep">|</span>
+      <span>年收入 ${input.secondPersonIncome}</span><span class="sep">|</span>
+      <span>${input.incomeStability2}</span>
+    </div>
+    <table class="detail-table">
+      <tr><th class="th-cat" style="width:18%"></th><th style="width:30%">健康险</th><th style="width:26%">寿险</th><th style="width:26%">养老金</th></tr>
+      <tr><td class="label">建议方案</td>
+        <td>重疾保额 ${result.secondPerson.recommendedCICoverage.toFixed(0)} 万<br><span class="sub">医疗险：${result.secondPerson.recommendedMIType}</span></td>
+        <td>保额 ${result.secondPerson.recommendedLifeCoverage.toFixed(0)} 万<br><span class="sub">${result.secondPerson.lifeTermSuggestion}</span></td>
+        <td>年补充 ${result.secondPerson.recommendedPensionAnnual.toFixed(0)} 万<br><span class="sub">缴费 ${result.secondPerson.payYears} 年</span></td>
+      </tr>
+      <tr><td class="label">保障缺口</td>
+        <td>重疾 ${result.secondPerson.ciGap.toFixed(1)} 万<br><span class="sub">医疗 ${result.secondPerson.miGap.toFixed(1)} 万</span></td>
+        <td>${result.secondPerson.lifeGap.toFixed(0)} 万</td>
+        <td>${result.secondPerson.pensionGap.toFixed(0)} 万</td>
+      </tr>
+      <tr><td class="label">年保费</td>
+        <td>重疾 ${result.secondPerson.estimatedCIPremium.toFixed(2)} 万 / 医疗 ${result.secondPerson.estimatedMIPremium.toFixed(2)} 万<br><span class="sub">合计 ${result.secondPerson.totalHealthPremium.toFixed(2)} 万</span></td>
+        <td>${result.secondPerson.estimatedLifePremium.toFixed(0)} 元</td>
+        <td>${result.secondPerson.recommendedPensionAnnual.toFixed(1)} 万/年</td>
+      </tr>
+      <tr><td class="label">预算检验</td>
+        <td>${result.secondPerson.healthBudgetResult}</td>
+        <td>${result.secondPerson.lifeBudgetResult}</td>
+        <td>${result.secondPerson.pensionBudgetResult}</td>
+      </tr>
+    </table>
+    ${result.secondPerson.recommendedMIReason ? `<div class="note">医疗险说明：${result.secondPerson.recommendedMIReason}</div>` : ''}
+  </div>
+
+  <!-- ═══ 子女 ═══ -->
+  <div class="page">
+    <h2 class="person-title">子女 · 保障方案</h2>
+    <div class="person-info">
+      <span>${input.childCount} 位子女</span><span class="sep">|</span>
+      <span>最小子女 ${input.childAge} 岁</span>
+    </div>
+    <table class="detail-table">
+      <tr><th class="th-cat" style="width:20%"></th><th style="width:40%">健康险</th><th style="width:20%">寿险</th><th style="width:20%">养老金</th></tr>
+      <tr><td class="label">建议方案</td>
+        <td>重疾保额 ${result.child.recommendedCICoverage.toFixed(0)} 万<br><span class="sub">医疗险：${result.child.recommendedMIType}</span></td>
+        <td>${result.child.recommendedLifeCoverage > 0 ? `${result.child.recommendedLifeCoverage} 万` : '暂不推荐'}</td>
+        <td>暂不推荐</td>
+      </tr>
+      <tr><td class="label">缺口</td>
+        <td>重疾 ${result.child.ciGap.toFixed(0)} 万</td>
+        <td>—</td>
+        <td>—</td>
+      </tr>
+      <tr><td class="label">意外险</td>
+        <td colspan="3">${result.child.recommendedAccidentCoverage} 万元</td>
+      </tr>
+      <tr><td class="label">优先级</td>
+        <td colspan="3">${result.child.priority}</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ═══ 父母 ═══ -->
+  <div class="page">
+    <h2 class="person-title">父母 · 保障方案</h2>
+    <div class="person-info">
+      <span>${input.parentSupportCount} 位赡养</span><span class="sep">|</span>
+      <span>${input.parentAge}</span><span class="sep">|</span>
+      <span>健康状况 ${input.parentHealth}</span>
+    </div>
+    <table class="detail-table">
+      <tr><th class="th-cat" style="width:20%"></th><th style="width:40%">健康险</th><th style="width:20%">寿险</th><th style="width:20%">养老金</th></tr>
+      <tr><td class="label">建议方案</td>
+        <td>重疾保额 ${result.parent.recommendedCICoverage.toFixed(0)} 万<br><span class="sub">医疗险：${result.parent.recommendedMIType}</span></td>
+        <td>暂不推荐</td>
+        <td>暂不推荐</td>
+      </tr>
+      <tr><td class="label">缺口</td>
+        <td>重疾 ${result.parent.ciGap.toFixed(0)} 万</td>
+        <td>—</td>
+        <td>—</td>
+      </tr>
+      <tr><td class="label">意外险</td>
+        <td colspan="3">${result.parent.recommendedAccidentCoverage}</td>
+      </tr>
+      <tr><td class="label">优先级</td>
+        <td colspan="3">${result.parent.priority}</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ═══ 年度保费汇总 ═══ -->
+  <div class="page">
+    <h2 class="person-title">年度保费汇总</h2>
+    <table class="detail-table">
+      <tr><th class="th-cat">险种</th><th>第一支柱</th><th>第二支柱</th><th>合计</th></tr>
+      ${premRowsHtml}
+      <tr class="total-row"><td class="label">年度合计</td>
+        <td>${t1.toFixed(2)} 万</td><td>${t2.toFixed(2)} 万</td>
+        <td>${(t1 + t2).toFixed(2)} 万</td>
+      </tr>
+    </table>
+  </div>
+</body></html>`;
+}
+
 // ─── Home ───
 export default function Home() {
   const [input, setInput] = useState<UserInput>(defaultInput);
@@ -330,6 +560,17 @@ export default function Home() {
   const clearRawVal = useCallback((k: string) => {
     setRawValues(p => { const n = { ...p }; delete n[k]; return n; });
   }, []);
+
+  const handlePrint = useCallback(() => {
+    const html = buildPrintHtml(input, result);
+    const w = window.open('', '_blank');
+    if (w) {
+      w.document.write(html);
+      w.document.close();
+      w.addEventListener('afterprint', () => w.close());
+      setTimeout(() => { w.print(); }, 300);
+    }
+  }, [input, result]);
 
   // 恢复检测：检查 localStorage 是否有保存的数据
   useEffect(() => {
@@ -748,12 +989,12 @@ export default function Home() {
                         <h1 className="text-2xl font-bold text-text-primary font-display">您的保险配置方案</h1>
                         <p className="text-sm text-text-tertiary mt-1">基于填写信息生成的个性化建议</p>
                       </div>
-                      <div className="flex items-center gap-3 shrink-0 no-print">
+                      <div className="flex items-center gap-3 shrink-0">
                         <span className="text-[11px] text-sage-500 font-medium bg-sage-50/80 px-3 py-1.5 rounded-full flex items-center gap-1.5">
                           <span className={cn("w-1.5 h-1.5 rounded-full", saveStatus === 'saving' ? 'bg-amber-400 animate-pulse' : 'bg-sage-400')} />
                           {saveStatus === 'saving' ? '保存中…' : '已自动保存'}
                         </span>
-                        <button onClick={() => window.print()}
+                        <button onClick={handlePrint}
                           className="px-4 py-2 rounded-button bg-white/60 text-text-secondary text-sm border border-sage-200/50 hover:bg-white/80 transition-all flex items-center gap-1.5">
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
                           打印方案
@@ -954,228 +1195,6 @@ export default function Home() {
       )}
       </div>
 
-      {/* ─── 打印专用内容 ─── */}
-      <div className="print-only">
-        {/* ============ 第1页：封面 ============ */}
-        <div className="print-page print-page-break">
-          <div className="print-cover">
-            <div className="print-logo">🏠</div>
-            <h1 className="print-title">家庭保险配置方案报告</h1>
-            <p className="print-date">生成日期：{new Date().toLocaleDateString('zh-CN')}</p>
-
-            <div className="print-cover-tags">
-              <span className="print-tag">风险等级：<strong>{result.riskLevel}</strong></span>
-              <span className="print-tag">风险指数：<strong>{result.riskIndex.toFixed(2)}%</strong></span>
-              <span className="print-tag">配置优先级：<strong>{result.priority}</strong></span>
-            </div>
-
-            <table className="print-summary-table">
-              <tbody>
-                <tr><td className="print-label">总保障缺口</td><td className="print-value">{result.totalGap.toFixed(0)} 万元</td></tr>
-                <tr><td className="print-label">健康险缺口</td><td className="print-value">{result.totalHealthGap.toFixed(0)} 万元</td></tr>
-                <tr><td className="print-label">寿险缺口</td><td className="print-value">{result.totalLifeGap.toFixed(0)} 万元</td></tr>
-                <tr><td className="print-label">养老金缺口</td><td className="print-value">{result.totalPensionGap.toFixed(0)} 万元</td></tr>
-                <tr><td className="print-label">年度总保费（预估）</td><td className="print-value">{result.totalAnnualPrem.toFixed(1)} 万元</td></tr>
-                <tr><td className="print-label">保费/收入比</td><td className="print-value">{result.premiumToIncomeRatio.toFixed(2)}%</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* ============ 第2页：第一经济支柱 ============ */}
-        <div className="print-page print-page-break">
-          <h2 className="print-person-title">第一经济支柱 · 保障方案</h2>
-          <div className="print-person-info">
-            <span>{input.firstPersonAge}岁</span><span className="print-info-sep">|</span>
-            <span>年收入 {input.firstPersonIncome}</span><span className="print-info-sep">|</span>
-            <span>{input.incomeStability}</span>
-          </div>
-
-          <table className="print-detail-table">
-            <thead>
-              <tr><th className="print-th-cat" style={{width:'18%'}}></th><th style={{width:'30%'}}>健康险</th><th style={{width:'26%'}}>寿险</th><th style={{width:'26%'}}>养老金</th></tr>
-            </thead>
-            <tbody>
-              <tr><td className="print-label">建议方案</td>
-                <td>重疾保额 {result.firstPerson.recommendedCICoverage.toFixed(0)} 万<br/><span className="print-sub">医疗险：{result.firstPerson.recommendedMIType}</span></td>
-                <td>保额 {result.firstPerson.recommendedLifeCoverage.toFixed(0)} 万<br/><span className="print-sub">{result.firstPerson.lifeTermSuggestion}</span></td>
-                <td>年补充 {result.firstPerson.recommendedPensionAnnual.toFixed(0)} 万<br/><span className="print-sub">缴费 {result.firstPerson.payYears} 年</span></td>
-              </tr>
-              <tr><td className="print-label">保障缺口</td>
-                <td>重疾 {result.firstPerson.ciGap.toFixed(1)} 万<br/><span className="print-sub">医疗 {result.firstPerson.miGap.toFixed(1)} 万</span></td>
-                <td>{result.firstPerson.lifeGap.toFixed(0)} 万</td>
-                <td>{result.firstPerson.pensionGap.toFixed(0)} 万</td>
-              </tr>
-              <tr><td className="print-label">年保费</td>
-                <td>重疾 {result.firstPerson.estimatedCIPremium.toFixed(2)} 万 / 医疗 {result.firstPerson.estimatedMIPremium.toFixed(2)} 万<br/><span className="print-sub">合计 {result.firstPerson.totalHealthPremium.toFixed(2)} 万</span></td>
-                <td>{result.firstPerson.estimatedLifePremium.toFixed(0)} 元</td>
-                <td>{result.firstPerson.recommendedPensionAnnual.toFixed(1)} 万/年</td>
-              </tr>
-              <tr><td className="print-label">预算检验</td>
-                <td>{result.firstPerson.healthBudgetResult}</td>
-                <td>{result.firstPerson.lifeBudgetResult}</td>
-                <td>{result.firstPerson.pensionBudgetResult}</td>
-              </tr>
-            </tbody>
-          </table>
-
-          {result.firstPerson.recommendedMIReason && (
-            <div className="print-note">医疗险说明：{result.firstPerson.recommendedMIReason}</div>
-          )}
-        </div>
-
-        {/* ============ 第3页：第二经济支柱 ============ */}
-        <div className="print-page print-page-break">
-          <h2 className="print-person-title">第二经济支柱 · 保障方案</h2>
-          <div className="print-person-info">
-            <span>{input.secondPersonAge}岁</span><span className="print-info-sep">|</span>
-            <span>年收入 {input.secondPersonIncome}</span><span className="print-info-sep">|</span>
-            <span>{input.incomeStability2}</span>
-          </div>
-
-          <table className="print-detail-table">
-            <thead>
-              <tr><th className="print-th-cat" style={{width:'18%'}}></th><th style={{width:'30%'}}>健康险</th><th style={{width:'26%'}}>寿险</th><th style={{width:'26%'}}>养老金</th></tr>
-            </thead>
-            <tbody>
-              <tr><td className="print-label">建议方案</td>
-                <td>重疾保额 {result.secondPerson.recommendedCICoverage.toFixed(0)} 万<br/><span className="print-sub">医疗险：{result.secondPerson.recommendedMIType}</span></td>
-                <td>保额 {result.secondPerson.recommendedLifeCoverage.toFixed(0)} 万<br/><span className="print-sub">{result.secondPerson.lifeTermSuggestion}</span></td>
-                <td>年补充 {result.secondPerson.recommendedPensionAnnual.toFixed(0)} 万<br/><span className="print-sub">缴费 {result.secondPerson.payYears} 年</span></td>
-              </tr>
-              <tr><td className="print-label">保障缺口</td>
-                <td>重疾 {result.secondPerson.ciGap.toFixed(1)} 万<br/><span className="print-sub">医疗 {result.secondPerson.miGap.toFixed(1)} 万</span></td>
-                <td>{result.secondPerson.lifeGap.toFixed(0)} 万</td>
-                <td>{result.secondPerson.pensionGap.toFixed(0)} 万</td>
-              </tr>
-              <tr><td className="print-label">年保费</td>
-                <td>重疾 {result.secondPerson.estimatedCIPremium.toFixed(2)} 万 / 医疗 {result.secondPerson.estimatedMIPremium.toFixed(2)} 万<br/><span className="print-sub">合计 {result.secondPerson.totalHealthPremium.toFixed(2)} 万</span></td>
-                <td>{result.secondPerson.estimatedLifePremium.toFixed(0)} 元</td>
-                <td>{result.secondPerson.recommendedPensionAnnual.toFixed(1)} 万/年</td>
-              </tr>
-              <tr><td className="print-label">预算检验</td>
-                <td>{result.secondPerson.healthBudgetResult}</td>
-                <td>{result.secondPerson.lifeBudgetResult}</td>
-                <td>{result.secondPerson.pensionBudgetResult}</td>
-              </tr>
-            </tbody>
-          </table>
-
-          {result.secondPerson.recommendedMIReason && (
-            <div className="print-note">医疗险说明：{result.secondPerson.recommendedMIReason}</div>
-          )}
-        </div>
-
-        {/* ============ 第4页：子女 ============ */}
-        <div className="print-page print-page-break">
-          <h2 className="print-person-title">子女 · 保障方案</h2>
-          <div className="print-person-info">
-            <span>{input.childCount} 位子女</span><span className="print-info-sep">|</span>
-            <span>最小子女 {input.childAge} 岁</span>
-          </div>
-
-          <table className="print-detail-table">
-            <thead>
-              <tr><th className="print-th-cat" style={{width:'20%'}}></th><th style={{width:'40%'}}>健康险</th><th style={{width:'20%'}}>寿险</th><th style={{width:'20%'}}>养老金</th></tr>
-            </thead>
-            <tbody>
-              <tr><td className="print-label">建议方案</td>
-                <td>重疾保额 {result.child.recommendedCICoverage.toFixed(0)} 万<br/><span className="print-sub">医疗险：{result.child.recommendedMIType}</span></td>
-                <td>{result.child.recommendedLifeCoverage > 0 ? `${result.child.recommendedLifeCoverage} 万` : '暂不推荐'}</td>
-                <td>暂不推荐</td>
-              </tr>
-              <tr><td className="print-label">缺口</td>
-                <td>重疾 {result.child.ciGap.toFixed(0)} 万</td>
-                <td>—</td>
-                <td>—</td>
-              </tr>
-              <tr><td className="print-label">意外险</td>
-                <td colSpan={3}>{result.child.recommendedAccidentCoverage} 万元</td>
-              </tr>
-              <tr><td className="print-label">优先级</td>
-                <td colSpan={3}>{result.child.priority}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* ============ 第5页：父母 ============ */}
-        <div className="print-page print-page-break">
-          <h2 className="print-person-title">父母 · 保障方案</h2>
-          <div className="print-person-info">
-            <span>{input.parentSupportCount} 位赡养</span><span className="print-info-sep">|</span>
-            <span>{input.parentAge}</span><span className="print-info-sep">|</span>
-            <span>健康状况 {input.parentHealth}</span>
-          </div>
-
-          <table className="print-detail-table">
-            <thead>
-              <tr><th className="print-th-cat" style={{width:'20%'}}></th><th style={{width:'40%'}}>健康险</th><th style={{width:'20%'}}>寿险</th><th style={{width:'20%'}}>养老金</th></tr>
-            </thead>
-            <tbody>
-              <tr><td className="print-label">建议方案</td>
-                <td>重疾保额 {result.parent.recommendedCICoverage.toFixed(0)} 万<br/><span className="print-sub">医疗险：{result.parent.recommendedMIType}</span></td>
-                <td>暂不推荐</td>
-                <td>暂不推荐</td>
-              </tr>
-              <tr><td className="print-label">缺口</td>
-                <td>重疾 {result.parent.ciGap.toFixed(0)} 万</td>
-                <td>—</td>
-                <td>—</td>
-              </tr>
-              <tr><td className="print-label">意外险</td>
-                <td colSpan={3}>{result.parent.recommendedAccidentCoverage}</td>
-              </tr>
-              <tr><td className="print-label">优先级</td>
-                <td colSpan={3}>{result.parent.priority}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* ============ 第6页：保费汇总 ============ */}
-        <div className="print-page">
-          <h2 className="print-person-title">年度保费汇总</h2>
-          <table className="print-detail-table">
-            <thead>
-              <tr><th className="print-th-cat">险种</th><th>第一支柱</th><th>第二支柱</th><th>合计</th></tr>
-            </thead>
-            <tbody>
-              {(() => {
-                const p1CI = result.firstPerson.estimatedCIPremium;
-                const p1MI = result.firstPerson.estimatedMIPremium;
-                const p1Life = result.firstPerson.estimatedLifePremium / 10000;
-                const p1Pension = result.firstPerson.recommendedPensionAnnual;
-                const p2CI = result.secondPerson.estimatedCIPremium;
-                const p2MI = result.secondPerson.estimatedMIPremium;
-                const p2Life = result.secondPerson.estimatedLifePremium / 10000;
-                const p2Pension = result.secondPerson.recommendedPensionAnnual;
-                const rows = [
-                  { l: "重疾险", p1: p1CI, p2: p2CI },
-                  { l: "医疗险", p1: p1MI, p2: p2MI },
-                  { l: "寿险", p1: p1Life, p2: p2Life },
-                  { l: "养老金", p1: p1Pension, p2: p2Pension },
-                ];
-                const t1 = rows.reduce((s,r)=>s+r.p1,0);
-                const t2 = rows.reduce((s,r)=>s+r.p2,0);
-                return <>
-                  {rows.map(r => (
-                    <tr key={r.l}><td className="print-label">{r.l}</td>
-                      <td>{r.p1 > 0 ? r.p1.toFixed(2) : '-'}</td>
-                      <td>{r.p2 > 0 ? r.p2.toFixed(2) : '-'}</td>
-                      <td>{(r.p1+r.p2) > 0 ? (r.p1+r.p2).toFixed(2) : '-'}</td>
-                    </tr>
-                  ))}
-                  <tr className="print-total-row"><td className="print-label">年度合计</td>
-                    <td>{t1.toFixed(2)} 万</td><td>{t2.toFixed(2)} 万</td>
-                    <td>{(t1+t2).toFixed(2)} 万</td>
-                  </tr>
-                </>;
-              })()}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </>
   );
 }
