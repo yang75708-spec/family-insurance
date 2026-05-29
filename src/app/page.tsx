@@ -527,7 +527,7 @@ function buildPrintHtml(input: UserInput, result: InsuranceResult): string {
       </tr>
     </table>
   </div>
-<script>window.onload=function(){setTimeout(function(){window.print()},300);window.onafterprint=function(){window.close()};var m=window.matchMedia('print');m&&m.addEventListener&&m.addEventListener('change',function(e){if(!e.matches)window.close()});};</script>
+<script>window.onload=function(){setTimeout(function(){window.print()},300);window.onafterprint=function(){location.reload()};var m=window.matchMedia('print');m&&m.addEventListener&&m.addEventListener('change',function(e){if(!e.matches)location.reload()});};</script>
 </body></html>`;
 }
 
@@ -563,11 +563,13 @@ export default function Home() {
   }, []);
 
   const handlePrint = useCallback(() => {
+    // 先保存当前数据
+    localStorage.setItem('family-insurance-data', JSON.stringify(input));
+    // 用打印 HTML 替换当前页面（无弹窗、无 iframe、完全可控）
     const html = buildPrintHtml(input, result);
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    document.open();
+    document.write(html);
+    document.close();
   }, [input, result]);
 
   // 恢复检测：检查 localStorage 是否有保存的数据
