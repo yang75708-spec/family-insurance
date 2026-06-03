@@ -774,7 +774,7 @@ export function calculate(input: UserInput): InsuranceResult {
   // 父母推荐最终使用新逻辑（而不是旧的固定升级链）
   const parentRecommendedMI = parentMIType;
   const parentMITerm = input.parentMIPremiumBudget;
-  const parentAccident = '20/人';
+  const parentAccident = '20';
   const parentPriority = '医疗+意外为主';
   // 寿险 - 父母
   const parentLifeRec = 0;
