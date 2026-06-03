@@ -23,8 +23,8 @@
   --radius-card: 28px;
   --radius-button: 999px;
   --radius-input: 24px;
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-display: "Inter", sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
   --animate-fade-up: fadeUp 0.6s ease-out;
   --animate-float: float 6s ease-in-out infinite;
   --animate-soft-glow: softGlow 3s ease-in-out infinite;
@@ -46,7 +46,7 @@
 body {
   background: linear-gradient(180deg, #F8F6F2 0%, #F3F6F2 100%);
   color: #2F3430;
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;

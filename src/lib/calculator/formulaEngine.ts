@@ -1,13 +1,26 @@
 import { Excel, getJobStabilityFactor, getLiquidAsset } from './excelEngine';
 import { UserInput, CalculatedParams, InsuranceResult } from './types';
 
+// ====== 养老金区间 → 中位值映射 ======
+const RETIRE_AGE_MAP: Record<string, number> = { '55-59岁': 57, '60-64岁': 62, '65-69岁': 67, '70岁以上': 72 };
+const RETIRE_YEARS_MAP: Record<string, number> = { '10年以下': 5, '10-19年': 15, '20-29年': 25, '30年以上': 35 };
+const RETIRE_GOAL_MAP: Record<string, number> = { '5万以下': 3, '5-10万': 8, '10-20万': 15, '20-30万': 25, '30万以上': 35 };
+const PENSION_FUND_MAP: Record<string, number> = { '无': 0, '5万以下': 2, '5-20万': 12, '20-50万': 35, '50万以上': 60 };
+const SOCIAL_PENSION_MAP: Record<string, number> = { '0.2万以下': 0.1, '0.2-0.5万': 0.35, '0.5-1万': 0.75, '1万以上': 1.2 };
+const PAY_YEARS_MAP: Record<string, number> = { '10年以下': 5, '10-19年': 15, '20-29年': 25, '30年以上': 35 };
+const PENSION_BUDGET_MAP: Record<string, number> = { '1万以下': 0.5, '1-3万': 2, '3-5万': 4, '5-10万': 7, '10万以上': 12 };
+
+function resolve(map: Record<string, number>, val: string, fallback: number): number {
+  return val !== undefined && val in map ? map[val] : fallback;
+}
+
 // ====== 医疗险推荐层级 ======
 const MI_TIERS = [
-  { id: '社保医保', coverage: 8, premium: 0, label: '社保医保' },
-  { id: '惠民保', coverage: 15, premium: 0.008, label: '惠民保' },
-  { id: '百万医疗', coverage: 80, premium: 0.05, label: '百万医疗' },
-  { id: '中端医疗', coverage: 150, minIncome: 15, premium: 0.4, label: '中端医疗' },
-  { id: '高端医疗', coverage: 300, minIncome: 45, premium: 2, label: '高端医疗' },
+  { id: '社保医保', coverage: 8, premium: 0, label: '社保医保', maxAge: 99 },
+  { id: '惠民保', coverage: 15, premium: 0.008, label: '惠民保', maxAge: 99 },
+  { id: '百万医疗', coverage: 80, premium: 0.05, label: '百万医疗', maxAge: 60 },
+  { id: '中端医疗', coverage: 150, minIncome: 15, premium: 0.4, label: '中端医疗', maxAge: 65 },
+  { id: '高端医疗', coverage: 300, minIncome: 45, premium: 2, label: '高端医疗', maxAge: 70 },
 ] as const;
 
 function getCurrentTierIdx(hasSocial: boolean, hasHuimin: boolean, hasBaiwan: boolean, hasZhongduan: boolean, hasGaoduan: boolean): number {
@@ -35,33 +48,46 @@ function recommendMIPlan(
   miGap: number,
   budget: number,
   householdIncome: number,
+  age: number,
   isParent: boolean,
 ): { type: string; reason: string } {
   const currentIdx = getCurrentTierIdx(hasSocial, hasHuimin, hasBaiwan, hasZhongduan, hasGaoduan);
-  const fmt = (n: number) => (n * 10000).toFixed(0);
+  const fmt = (n: number) => n.toFixed(3).replace(/\.?0+$/, '');
 
   // 1. 已有足够商业险覆盖
   if (miGap <= 0 && (hasBaiwan || hasZhongduan || hasGaoduan)) {
     return { type: '已配置完善', reason: `已有${MI_TIERS[currentIdx].label}，保障已覆盖当前医疗缺口` };
   }
 
-  // 2. 无商业险（仅社保医保或惠民保）→ 百万医疗基础保障
+  // 2. 无商业险（仅社保医保或惠民保）→ 基础保障（根据年龄选择百万医疗或惠民保）
   if (!hasBaiwan && !hasZhongduan && !hasGaoduan) {
+    const canBaiwan = age <= 60;
     if (isParent) {
       return {
-        type: '百万医疗',
-        reason: '建议为父母配置百万医疗（保额80万），如因健康问题无法投保，可考虑防癌医疗险或惠民保',
+        type: canBaiwan ? '百万医疗' : '惠民保',
+        reason: canBaiwan
+          ? '建议为父母配置百万医疗（保额80万），如因健康问题无法投保，可考虑防癌医疗险或惠民保'
+          : '父母年龄已超百万医疗投保上限，建议配置惠民保作为基础保障',
       };
     }
-    return { type: '百万医疗', reason: '建议配置百万医疗作为基础保障，年保费约500元' };
+    if (!canBaiwan) {
+      return { type: '惠民保', reason: '您的年龄已超百万医疗投保上限，建议配置惠民保作为基础保障，年保费约0.008万元' };
+    }
+    return { type: '百万医疗', reason: '建议配置百万医疗作为基础保障，年保费约0.05万元' };
   }
 
   // 3. 有缺口 → 找最低够用层级
   let minSufficientIdx = -1;
   for (let i = currentIdx + 1; i < MI_TIERS.length; i++) {
+    if (age > MI_TIERS[i].maxAge) continue;
     if (MI_TIERS[i].coverage >= medicalCost) { minSufficientIdx = i; break; }
   }
-  if (minSufficientIdx === -1) minSufficientIdx = MI_TIERS.length - 1;
+  if (minSufficientIdx === -1) {
+    // 无年龄合适且保额足够的层级，取最后一个年龄合适的
+    for (let i = currentIdx + 1; i < MI_TIERS.length; i++) {
+      if (age <= MI_TIERS[i].maxAge) minSufficientIdx = i;
+    }
+  }
 
   const recIdx = Math.max(minSufficientIdx, currentIdx + 1);
   const recTier = MI_TIERS[recIdx];
@@ -73,12 +99,12 @@ function recommendMIPlan(
   if (incomeQualified) {
     // 收入达标 → 看预算能否升级
     const upgradeIdx = recIdx + 1;
-    if (upgradeIdx < MI_TIERS.length && budget >= MI_TIERS[upgradeIdx].premium) {
+    if (upgradeIdx < MI_TIERS.length && age <= MI_TIERS[upgradeIdx].maxAge && budget >= MI_TIERS[upgradeIdx].premium) {
       const upgradeTier = MI_TIERS[upgradeIdx];
       const alt = isParent ? '如因健康问题无法投保，可考虑防癌医疗险。' : '';
       return {
         type: recTier.id,
-        reason: `${recTier.label}（${recTier.coverage}万保额）已能覆盖您的保障缺口。${alt}预算充足，是否考虑升级至${upgradeTier.label}？（年保费约${fmt(upgradeTier.premium)}元）`,
+        reason: `${recTier.label}（${recTier.coverage}万保额）已能覆盖您的保障缺口。${alt}预算充足，是否考虑升级至${upgradeTier.label}？（年保费约${fmt(upgradeTier.premium)}万元）`,
       };
     }
     // 预算不够升级 → 直接推荐
@@ -87,32 +113,33 @@ function recommendMIPlan(
       : '';
     return {
       type: recTier.id,
-      reason: `推荐${recTier.label}（保额${recTier.coverage}万），年保费约${fmt(recTier.premium)}元${alt}`,
+      reason: `推荐${recTier.label}（保额${recTier.coverage}万），年保费约${fmt(recTier.premium)}万元${alt}`,
     };
   } else {
     // 收入不达标（不提示收入）
     if (budget >= recTier.premium) {
       return {
         type: recTier.id,
-        reason: `推荐${recTier.label}（保额${recTier.coverage}万），年保费约${fmt(recTier.premium)}元`,
+        reason: `推荐${recTier.label}（保额${recTier.coverage}万），年保费约${fmt(recTier.premium)}万元`,
       };
     }
     // 预算也不够 → 预算内最高保额方案
     let bestIdx = currentIdx;
     for (let i = currentIdx + 1; i < MI_TIERS.length; i++) {
+      if (age > MI_TIERS[i].maxAge) continue;
       if (budget >= MI_TIERS[i].premium) bestIdx = i;
       else break;
     }
     if (bestIdx <= currentIdx) {
       return {
         type: MI_TIERS[currentIdx].id,
-        reason: `当前预算${fmt(budget)}元范围内暂无更高级别方案，建议维持${MI_TIERS[currentIdx].label}`,
+        reason: `当前预算${fmt(budget)}万元范围内暂无更高级别方案，建议维持${MI_TIERS[currentIdx].label}`,
       };
     }
     const bestTier = MI_TIERS[bestIdx];
     return {
       type: bestTier.id,
-      reason: `当前预算${fmt(budget)}元，建议配置${bestTier.label}（保额${bestTier.coverage}万），可覆盖大部分医疗缺口`,
+      reason: `当前预算${fmt(budget)}万元，建议配置${bestTier.label}（保额${bestTier.coverage}万），可覆盖大部分医疗缺口`,
     };
   }
 }
@@ -177,6 +204,79 @@ function computeChildCIRecommendation(
   return Math.max(20, Math.min(100, Math.round(cityBase * incomeFactor * ageFactor)));
 }
 
+// ====== 寿险费率表（万元保费/万元保额） ======
+const LIFE_RATES: [number, number, number, number][] = [
+  [20, 30, 0.0008, 0.0005],
+  [30, 40, 0.0012, 0.0008],
+  [40, 50, 0.0025, 0.0015],
+  [50, 60, 0.0045, 0.0035],
+  [60, 70, 0.0090, 0.0065],
+];
+function getLifeRate(age: number, gender: string): number {
+  for (const [min, max, male, female] of LIFE_RATES) {
+    if (age >= min && age < max) return gender === '男性' ? male : female;
+  }
+  return 0.0090;
+}
+
+// ====== 重疾险费率表（年费率，万元保费/万元保额） ======
+const CI_RATES: [number, number, number, number][] = [
+  [20, 30, 0.015, 0.012],
+  [30, 40, 0.025, 0.020],
+  [40, 50, 0.040, 0.035],
+  [50, 60, 0.065, 0.055],
+  [60, 70, 0.090, 0.080],
+];
+function getCIRate(age: number, gender: string): number {
+  for (const [min, max, male, female] of CI_RATES) {
+    if (age >= min && age < max) return gender === '男性' ? male : female;
+  }
+  return 0.090;
+}
+
+const HEALTH_COEFF: Record<string, number> = { '健康': 1.0, '吸烟': 1.5, '有病史': 2.0 };
+
+const CAREER_RISK_MAP: Record<string, number> = {
+  '非常稳定（公务员/国企/事业单位）': 0.8,
+  '较稳定（大型企业核心岗）': 1.0,
+  '一般（中小企/绩效占比高）': 1.2,
+  '不稳定（自由职业/创业/销售）': 1.5,
+};
+
+function getSalaryGrowthForLife(age: number): number {
+  if (age < 30) return 0.045;
+  if (age < 40) return 0.04;
+  if (age < 50) return 0.02;
+  return 0.005;
+}
+
+function getExistingLifeYears(val: string): number {
+  switch (val) {
+    case '10年以下': return 5;
+    case '10-20年': return 15;
+    case '20年以上': return 25;
+    case '不清楚': return 0;
+    default: return 0;
+  }
+}
+
+function getIncomeRatio(income1: number, income2: number, isFirst: boolean): number {
+  const total = income1 + income2;
+  if (total === 0) return 0.5;
+  return isFirst ? income1 / total : income2 / total;
+}
+
+/**
+ * 年龄相关的医保目录内费用占比
+ * 年龄越大，目录内费用占比越低（老年人用药更多在目录外）
+ */
+function getAgeCoverageRatio(age: number): number {
+  if (age < 30) return 0.60;
+  if (age < 45) return 0.50;
+  if (age < 60) return 0.40;
+  return 0.35;
+}
+
 /**
  * ========================================
  *  Excel → JavaScript 公式映射引擎
@@ -229,17 +329,19 @@ export function calculate(input: UserInput): InsuranceResult {
     : incomeConversion1 / (incomeConversion1 + incomeConversion2);
   // M6 = 1-L6
   const incomeRatio2 = 1 - incomeRatio1;
-  // L7 = IF((B42-B3)<=4, B42-B3, 4)
+  // L7 = IF((B42-B3)<=5, B42-B3, 5)
+  const retireAge1 = resolve(RETIRE_AGE_MAP, input.firstPersonRetireAge, 62);
+  const retireAge2 = resolve(RETIRE_AGE_MAP, input.secondPersonRetireAge, 62);
   const ciProtectYears1 = Excel.IF(
-    (input.firstPersonRetireAge - input.firstPersonAge) <= 4,
-    input.firstPersonRetireAge - input.firstPersonAge,
-    4
+    (retireAge1 - input.firstPersonAge) <= 5,
+    retireAge1 - input.firstPersonAge,
+    5
   );
-  // M7 = IF((B43-B4)<=4, B43-B4, 4)
+  // M7 = IF((B43-B4)<=5, B43-B4, 5)
   const ciProtectYears2 = Excel.IF(
-    (input.secondPersonRetireAge - input.secondPersonAge) <= 4,
-    input.secondPersonRetireAge - input.secondPersonAge,
-    4
+    (retireAge2 - input.secondPersonAge) <= 5,
+    retireAge2 - input.secondPersonAge,
+    5
   );
   // L8 = CHOOSE(MATCH(D6,...),...) + CHOOSE(MATCH(D7,...),...)
   const liquidAsset = getLiquidAsset(input.bankDeposit, input.lowRiskInvestment);
@@ -289,10 +391,10 @@ export function calculate(input: UserInput): InsuranceResult {
     : input.city === '普通地级市' ? 0.8 : 0.6;
   const kCity2 = kCity1;
 
-  // H16 = MIN(H12, L2*H13) * 0.5 * H14 * H15 — SocialCoverage
-  const medicalCoverage1 = Math.min(medicalCost1, citySalary1 * kcap1) * 0.5 * kDir1 * kCity1;
+  // H16 = MIN(H12, L2*H13) * getAgeCoverageRatio(age) * H14 * H15 — SocialCoverage
+  const medicalCoverage1 = Math.min(medicalCost1, citySalary1 * kcap1) * getAgeCoverageRatio(input.firstPersonAge) * kDir1 * kCity1;
   // I16
-  const medicalCoverage2 = Math.min(medicalCost2, citySalary2 * kcap2) * 0.5 * kDir2 * kCity2;
+  const medicalCoverage2 = Math.min(medicalCost2, citySalary2 * kcap2) * getAgeCoverageRatio(input.secondPersonAge) * kDir2 * kCity2;
 
   // 根据勾选的健康险计算已有有效保额
   const effCoverage1 = getEffectiveCoverageFromCheckboxes(
@@ -328,9 +430,9 @@ export function calculate(input: UserInput): InsuranceResult {
     : input.secondPersonAge < 50 ? 0.02 : 0.005;
 
   // H20 = B42 - B3
-  const remainingN1 = input.firstPersonRetireAge - input.firstPersonAge;
+  const remainingN1 = retireAge1 - input.firstPersonAge;
   // I20 = B43 - B4
-  const remainingN2 = input.secondPersonRetireAge - input.secondPersonAge;
+  const remainingN2 = retireAge2 - input.secondPersonAge;
 
   // H21 = L1 * (1 - ((1+H19)/(1+L3))^L7) / (L3 - H19) * H18
   const pvIncomeAdjusted1 = incomeConversion1 *
@@ -350,21 +452,17 @@ export function calculate(input: UserInput): InsuranceResult {
     (1 - Math.pow((1 + inflationI) / (1 + discountRate), ciProtectYears2)) /
     (discountRate - inflationI) * incomeRatio2;
 
-  // H24 = MAX(0, H21 + H23 - C14 - L8) — CIGap
-  const ciGap1 = Math.max(0, Math.round((pvIncomeAdjusted1 + pvExpense1 - input.firstPersonCIExisting - liquidAsset) * 100) / 100);
-  // I24 = MAX(0, I21 + I23 - C15 - L8)
-  const ciGap2 = Math.max(0, Math.round((pvIncomeAdjusted2 + pvExpense2 - input.secondPersonCIExisting - liquidAsset) * 100) / 100);
+  // H24 = MAX(0, H21 + H23 - C14 - L8*0.85) — CIGap（留15%应急）
+  const ciGap1 = Math.max(0, Math.round((pvIncomeAdjusted1 + pvExpense1 - input.firstPersonCIExisting - liquidAsset * 0.85) * 100) / 100);
+  // I24 = MAX(0, I21 + I23 - C15 - L8*0.85)
+  const ciGap2 = Math.max(0, Math.round((pvIncomeAdjusted2 + pvExpense2 - input.secondPersonCIExisting - liquidAsset * 0.85) * 100) / 100);
 
-  // H25 = IF(B3>=50,0.065, IF(B3>=40,0.04, IF(B3>=30,0.025, IF(B3>=20,0.015, 0))))
-  const kpremium1 = input.firstPersonAge >= 50 ? 0.065
-    : input.firstPersonAge >= 40 ? 0.04
-    : input.firstPersonAge >= 30 ? 0.025
-    : input.firstPersonAge >= 20 ? 0.015 : 0;
+  // H25 = getCIRate(age, gender) * healthCoeff — CI premium rate
+  const ciHealthCoeff1 = HEALTH_COEFF[input.firstPersonHealthStatus] ?? 1.0;
+  const ciRate1 = getCIRate(input.firstPersonAge, input.firstPersonGender);
   // I25
-  const kpremium2 = input.secondPersonAge >= 50 ? 0.065
-    : input.secondPersonAge >= 40 ? 0.04
-    : input.secondPersonAge >= 30 ? 0.025
-    : input.secondPersonAge >= 20 ? 0.015 : 0;
+  const ciHealthCoeff2 = HEALTH_COEFF[input.secondPersonHealthStatus] ?? 1.0;
+  const ciRate2 = getCIRate(input.secondPersonAge, input.secondPersonGender);
 
   // ==================== 第一经济支柱——健康险输出 ====================
   // B3 = H21 + H23
@@ -383,10 +481,10 @@ export function calculate(input: UserInput): InsuranceResult {
     input.p1_社保医保, input.p1_惠民保, input.p1_百万医疗,
     input.p1_中端医疗, input.p1_高端医疗,
     medicalCost1, medicalGap1,
-    input.firstPersonMIPremiumBudget, totalHouseholdIncome, false
+    input.firstPersonMIPremiumBudget, totalHouseholdIncome, input.firstPersonAge, false
   );
-  // D4 = B4 * H25
-  const estCIPrem1 = Math.round(ciGapOut1 * kpremium1 * 100) / 100;
+  // D4 = B4 * ciRate1 * ciHealthCoeff1
+  const estCIPrem1 = Math.round(ciGapOut1 * ciRate1 * ciHealthCoeff1 * 100) / 100;
   // D5 = estimateMIPremium(年龄, 收入, 推荐类型)
   const estMIPrem1 = estimateMIPremium(input.firstPersonAge, input.firstPersonIncome, recMIType1);
   // D6 = D4 + D5
@@ -396,79 +494,101 @@ export function calculate(input: UserInput): InsuranceResult {
     ? '✅预算充足'
     : '⚠️预算不足';
 
-  // ==================== 第一经济支柱——寿险输出 ====================
-  // B9 = MAX(
-  //   MAX(0, mortgageVal + loanVal + expenseVal*G4*(1+G7)^(G4/2)*G9 + B8*30*(1+G7)^(G3/2) + B9*20*(1+G7)^(G6/2)*G9 - (deposit+invest)*(1+G7) - existingLife),
-  //   MAX(0, income*D10*(1+G8)^(D10/2)*G9 - existingLife)
-  // )
+  // ==================== 第一经济支柱——寿险输出（新版公式） ====================
   const mortgageVal1 = Excel.getMortgage(input.mortgageBalance);
   const otherLoanVal1 = Excel.getOtherLoan(input.otherLoanAmount);
   const expenseVal1 = Excel.getExpenseVal(input.annualExpense);
   const depositVal1 = Excel.getDeposit(input.bankDeposit);
   const investVal1 = Excel.getInvestment(input.lowRiskInvestment);
-  const existingLife1 = Excel.getLifeCoverage(input.firstPersonLifeCoverage);
+  const existingLife1 = input.firstPersonHasLifeIns
+    ? Excel.getLifeCoverage(input.firstPersonLifeCoverage)
+    : 0;
+  const existLifeYears1 = input.firstPersonHasLifeIns
+    ? getExistingLifeYears(input.firstPersonExistingLifeYears)
+    : 0;
 
-  const lifeNeedA1 = Math.max(0,
-    mortgageVal1 + otherLoanVal1 +
-    expenseVal1 * firstProtectYears * Math.pow(1 + inflationRate, firstProtectYears / 2) * discountFactor +
-    input.childCount * 30 * Math.pow(1 + inflationRate, childToGradYears / 2) +
-    input.parentSupportCount * 20 * Math.pow(1 + inflationRate, supportYears / 2) * discountFactor -
-    (depositVal1 + investVal1) * (1 + inflationRate) -
-    existingLife1
+  // 收入占比
+  const lifeIncomeRatio1 = getIncomeRatio(incomeConversion1, incomeConversion2, true);
+
+  // 职业风险系数
+  const careerRisk1 = CAREER_RISK_MAP[input.incomeStability] ?? 1.0;
+
+  // 工资增长率（寿险用）
+  const salaryGrowthLife1 = getSalaryGrowthForLife(input.firstPersonAge);
+
+  // 支出缺口方案
+  const lifeExpenseGap1 = Math.max(0,
+    mortgageVal1 * lifeIncomeRatio1
+    + otherLoanVal1 * lifeIncomeRatio1
+    + expenseVal1 * firstProtectYears * Math.pow(1 + inflationRate, firstProtectYears / 2) * discountFactor * lifeIncomeRatio1
+    + input.childCount * 30 * Math.pow(1 + inflationRate, childToGradYears / 2) * discountFactor * lifeIncomeRatio1
+    + input.parentSupportCount * 20 * Math.pow(1 + inflationRate, supportYears / 2) * discountFactor * lifeIncomeRatio1
+    - (depositVal1 + investVal1) * lifeIncomeRatio1 * (1 + inflationRate)
+    - existingLife1 * Math.min(existLifeYears1, firstProtectYears) / Math.max(firstProtectYears, 1)
   );
 
-  const lifeNeedB1 = Math.max(0,
-    incomeConversion1 * firstRemainingYears * Math.pow(1 + salaryGrowthRate, firstRemainingYears / 2) * discountFactor -
-    existingLife1
+  // 收入损失方案
+  const lifeIncomeGap1 = Math.max(0,
+    incomeConversion1 * firstRemainingYears
+    * Math.pow(1 + salaryGrowthLife1, firstRemainingYears / 2)
+    * discountFactor * careerRisk1
+    - existingLife1 * Math.min(existLifeYears1, firstRemainingYears) / Math.max(firstRemainingYears, 1)
   );
 
-  const recLife1 = Math.round(Math.max(lifeNeedA1, lifeNeedB1) * 100) / 100;
-
-  // B10 = D28 (已有寿险保额)
+  const recLife1 = Math.round(Math.max(lifeExpenseGap1, lifeIncomeGap1) * 100) / 100;
   const existingLifeOut1 = existingLife1;
-
-  // B11 = MAX(0, B9 - IF(B10="30-50万",40, IF(B10="50万以内",25, IF(B10="50-100万",75, 0))))
   const lifeGap1 = Math.max(0, parseFloat((recLife1 - existingLife1).toFixed(2)));
 
-  // D9 = B11 * 10
-  const estLifePrem1 = Math.round(lifeGap1 * 10 * 100) / 100;
+  // 保费（万元）= 费率(万元保费/万元保额) × 缺口(万元) × 健康系数
+  const lifeRate1 = getLifeRate(input.firstPersonAge, input.firstPersonGender);
+  const healthCoeff1 = HEALTH_COEFF[input.firstPersonHealthStatus] ?? 1.0;
+  const estLifePrem1 = Math.round(lifeRate1 * Math.max(0, recLife1 - existingLife1) * healthCoeff1 * 10000) / 10000;
 
-  // D10 = IF(D9 <= D35, "✅ 预算充足", "...")
   const lifeBudget1 = estLifePrem1 <= input.firstPersonLifeBudget
     ? '✅ 预算充足'
     : '⚠️ 预算不足，建议降低保额或调整期限';
 
-  // D11 = IF(B35="63岁","推荐配置定期寿险至63岁","推荐配置至65岁或终身")
-  const lifeTerm1 = input.firstPersonLifeTerm === '63岁'
-    ? '推荐配置定期寿险至63岁'
-    : '推荐配置至65岁或终身';
+  // 期限建议
+  const lifeTerm1 =
+    input.firstPersonLifeTerm === '63岁' ? '推荐配置定期寿险至63岁'
+    : input.firstPersonLifeTerm === '65岁' ? '推荐配置定期寿险至65岁'
+    : input.firstPersonLifeTerm === '终身' ? '推荐配置终身寿险'
+    : input.firstPersonLifeTerm === '房贷还清或子女成年' ? '推荐配置定期寿险至房贷还清或子女成年'
+    : '';
 
   // ==================== 第一经济支柱——养老金输出 ====================
   // H3 = D42*(0.03+1)^(B42-B3)
-  const retireNeedFV1 = input.firstPersonRetireGoal * Math.pow(1 + inflationRate, remainingN1);
+  const retireGoal1 = resolve(RETIRE_GOAL_MAP, input.firstPersonRetireGoal, 15);
+  const retireYears1 = resolve(RETIRE_YEARS_MAP, input.firstPersonRetireYears, 25);
+  const pensionFund1 = resolve(PENSION_FUND_MAP, input.firstPersonPensionFund, 2);
+  const comPension1 = resolve(PENSION_FUND_MAP, input.firstPersonComPension, 2);
+  const personalPension1 = resolve(PENSION_FUND_MAP, input.firstPersonPersonalPension, 2);
+  const socialPension1 = resolve(SOCIAL_PENSION_MAP, input.firstPersonSocialPension, 0.35);
+  const payYears1 = resolve(PAY_YEARS_MAP, input.firstPersonPayYears, 25);
+  const pensionBudget1_val = resolve(PENSION_BUDGET_MAP, input.firstPersonPensionBudget, 2);
+  const retireNeedFV1 = retireGoal1 * Math.pow(1 + inflationRate, remainingN1);
   // H4 = PV(0.05, C42, -H3, 0, 1)
-  const retireNeedPV1 = Excel.PV(discountRate, input.firstPersonRetireYears, -retireNeedFV1, 0, 1);
+  const retireNeedPV1 = Excel.PV(discountRate, retireYears1, -retireNeedFV1, 0, 1);
   // H5 = FV(0.05, B42-B3, 0, -B46, 0) + FV(0.05, B42-B3, 0, -C46, 0) + FV(0.05, B42-B3, 0, -D46, 0) + PV(0.05, C42, -E46*12, 0, 1)
   const existingReserveFV1 =
-    Excel.FV(discountRate, remainingN1, 0, -(input.firstPersonPensionFund), 0) +
-    Excel.FV(discountRate, remainingN1, 0, -(input.firstPersonComPension), 0) +
-    Excel.FV(discountRate, remainingN1, 0, -(input.firstPersonPersonalPension), 0) +
-    Excel.PV(discountRate, input.firstPersonRetireYears, -(input.firstPersonSocialPension * 12), 0, 1);
+    Excel.FV(discountRate, remainingN1, 0, -(pensionFund1), 0) +
+    Excel.FV(discountRate, remainingN1, 0, -(comPension1), 0) +
+    Excel.FV(discountRate, remainingN1, 0, -(personalPension1), 0) +
+    Excel.PV(discountRate, retireYears1, -(socialPension1 * 12), 0, 1);
   // H6 = MAX(0, H4 - H5)  — 全部统一为万元
   const retireGap1 = Math.max(0, retireNeedPV1 - existingReserveFV1);
 
   // B13 = PMT(0.05, B52, 0, H6, 1) * (-1)  — 结果在万元，不低于0
-  const recPension1 = Math.max(0, Math.round(-Excel.PMT(discountRate, input.firstPersonPayYears, 0, retireGap1, 1) * 100) / 100);
+  const recPension1 = Math.max(0, Math.round(-Excel.PMT(discountRate, payYears1, 0, retireGap1, 1) * 100) / 100);
   // B14 = H5
   const existingPensionFV1 = existingReserveFV1;
   // B15 = D42
-  const annualRetireGoal1 = input.firstPersonRetireGoal;
+  const annualRetireGoal1 = retireGoal1;
   // D13 = H6
   const pensionGap1 = Math.round(retireGap1 * 100) / 100;
   // D14 = B52
-  const payYears1 = input.firstPersonPayYears;
   // D15 = IF(B13 <= D52, "✅预算充足", "⚠️...")
-  const pensionBudget1 = recPension1 <= input.firstPersonPensionBudget
+  const pensionBudget1 = recPension1 <= pensionBudget1_val
     ? '✅预算充足'
     : '⚠️预算不足，请调整比例或延长缴费期';
 
@@ -489,10 +609,10 @@ export function calculate(input: UserInput): InsuranceResult {
     input.p2_社保医保, input.p2_惠民保, input.p2_百万医疗,
     input.p2_中端医疗, input.p2_高端医疗,
     medicalCost2, medicalGap2,
-    input.secondPersonMIPremiumBudget, totalHouseholdIncome, false
+    input.secondPersonMIPremiumBudget, totalHouseholdIncome, input.secondPersonAge, false
   );
-  // D19 = B19 * I25
-  const estCIPrem2 = Math.round(ciGapOut2 * kpremium2 * 100) / 100;
+  // D19 = B19 * ciRate2 * ciHealthCoeff2
+  const estCIPrem2 = Math.round(ciGapOut2 * ciRate2 * ciHealthCoeff2 * 100) / 100;
   // D20 = estimateMIPremium(年龄, 收入, 推荐类型)
   const estMIPrem2 = estimateMIPremium(input.secondPersonAge, input.secondPersonIncome, recMIType2);
   // D21 = D19 + D20
@@ -502,64 +622,90 @@ export function calculate(input: UserInput): InsuranceResult {
     ? '✅预算充足'
     : '⚠️预算不足';
 
-  // ==================== 第二经济支柱——寿险输出 ====================
+  // ==================== 第二经济支柱——寿险输出（新版公式） ====================
   const mortgageVal2 = Excel.getMortgageP2(input.mortgageBalance);
   const otherLoanVal2 = Excel.getOtherLoanP2(input.otherLoanAmount);
-  const existingLife2 = Excel.getLifeCoverage(input.secondPersonLifeCoverage);
+  const existingLife2 = input.secondPersonHasLifeIns
+    ? Excel.getLifeCoverage(input.secondPersonLifeCoverage)
+    : 0;
+  const existLifeYears2 = input.secondPersonHasLifeIns
+    ? getExistingLifeYears(input.secondPersonExistingLifeYears)
+    : 0;
 
-  const lifeNeedA2 = Math.max(0,
-    mortgageVal2 + otherLoanVal2 +
-    expenseVal1 * secondProtectYears * Math.pow(1 + inflationRate, secondProtectYears / 2) * discountFactor +
-    input.childCount * 15 * Math.pow(1 + inflationRate, childToGradYears / 2) +
-    input.parentSupportCount * 10 * Math.pow(1 + inflationRate, supportYears / 2) * discountFactor -
-    (depositVal1 + investVal1) * 0.5 * (1 + inflationRate) -
-    existingLife2
+  // 收入占比
+  const lifeIncomeRatio2 = getIncomeRatio(incomeConversion1, incomeConversion2, false);
+
+  // 职业风险系数
+  const careerRisk2 = CAREER_RISK_MAP[input.incomeStability2] ?? 1.0;
+
+  // 工资增长率（寿险用）
+  const salaryGrowthLife2 = getSalaryGrowthForLife(input.secondPersonAge);
+
+  // 支出缺口方案
+  const lifeExpenseGap2 = Math.max(0,
+    mortgageVal2 * lifeIncomeRatio2
+    + otherLoanVal2 * lifeIncomeRatio2
+    + expenseVal1 * secondProtectYears * Math.pow(1 + inflationRate, secondProtectYears / 2) * discountFactor * lifeIncomeRatio2
+    + input.childCount * 15 * Math.pow(1 + inflationRate, childToGradYears / 2) * discountFactor * lifeIncomeRatio2
+    + input.parentSupportCount * 10 * Math.pow(1 + inflationRate, supportYears / 2) * discountFactor * lifeIncomeRatio2
+    - (depositVal1 + investVal1) * lifeIncomeRatio2 * (1 + inflationRate)
+    - existingLife2 * Math.min(existLifeYears2, secondProtectYears) / Math.max(secondProtectYears, 1)
   );
 
-  const lifeNeedB2 = Math.max(0,
-    incomeConversion2 * secondRemainingWorkYears * Math.pow(1 + salaryGrowthRate, secondRemainingWorkYears / 2) * discountFactor -
-    existingLife2
+  // 收入损失方案
+  const lifeIncomeGap2 = Math.max(0,
+    incomeConversion2 * secondRemainingWorkYears
+    * Math.pow(1 + salaryGrowthLife2, secondRemainingWorkYears / 2)
+    * discountFactor * careerRisk2
+    - existingLife2 * Math.min(existLifeYears2, secondRemainingWorkYears) / Math.max(secondRemainingWorkYears, 1)
   );
 
-  const recLife2 = Math.round(Math.max(lifeNeedA2, lifeNeedB2) * 100) / 100;
-
-  // B25 = D29
+  const recLife2 = Math.round(Math.max(lifeExpenseGap2, lifeIncomeGap2) * 100) / 100;
   const existingLifeOut2 = existingLife2;
-
-  // B26 = MAX(0, B24 - IF(D29="30万以内",15,...))
   const lifeGap2 = Math.max(0, parseFloat((recLife2 - existingLife2).toFixed(2)));
 
-  // D24 = B26 * 10
-  const estLifePrem2 = Math.round(lifeGap2 * 10 * 100) / 100;
+  // 保费（万元）= 费率 × 缺口 × 健康系数
+  const lifeRate2 = getLifeRate(input.secondPersonAge, input.secondPersonGender);
+  const healthCoeff2 = HEALTH_COEFF[input.secondPersonHealthStatus] ?? 1.0;
+  const estLifePrem2 = Math.round(lifeRate2 * Math.max(0, recLife2 - existingLife2) * healthCoeff2 * 10000) / 10000;
 
-  // D25 = IF(D24 <= D36, ...)
   const lifeBudget2 = estLifePrem2 <= input.secondPersonLifeBudget
     ? '✅ 预算充足'
     : '⚠️ 预算不足，建议降低保额或调整期限';
 
-  // D26 = IF(B36="63岁", ...)
-  const lifeTerm2 = input.secondPersonLifeTerm === '63岁'
-    ? '推荐配置定期寿险至63岁'
-    : '推荐配置至65岁或终身';
+  // 期限建议
+  const lifeTerm2 =
+    input.secondPersonLifeTerm === '63岁' ? '推荐配置定期寿险至63岁'
+    : input.secondPersonLifeTerm === '65岁' ? '推荐配置定期寿险至65岁'
+    : input.secondPersonLifeTerm === '终身' ? '推荐配置终身寿险'
+    : input.secondPersonLifeTerm === '房贷还清或子女成年' ? '推荐配置定期寿险至房贷还清或子女成年'
+    : '';
 
   // ==================== 第二经济支柱——养老金输出 ====================
-  const retireNeedFV2 = input.secondPersonRetireGoal * Math.pow(1 + inflationRate, remainingN2);
-  const retireNeedPV2 = Excel.PV(discountRate, input.secondPersonRetireYears, -retireNeedFV2, 0, 1);
+  const retireGoal2 = resolve(RETIRE_GOAL_MAP, input.secondPersonRetireGoal, 8);
+  const retireYears2 = resolve(RETIRE_YEARS_MAP, input.secondPersonRetireYears, 25);
+  const pensionFund2 = resolve(PENSION_FUND_MAP, input.secondPersonPensionFund, 2);
+  const comPension2 = resolve(PENSION_FUND_MAP, input.secondPersonComPension, 2);
+  const personalPension2 = resolve(PENSION_FUND_MAP, input.secondPersonPersonalPension, 2);
+  const socialPension2 = resolve(SOCIAL_PENSION_MAP, input.secondPersonSocialPension, 0.35);
+  const payYears2 = resolve(PAY_YEARS_MAP, input.secondPersonPayYears, 5);
+  const pensionBudget2_val = resolve(PENSION_BUDGET_MAP, input.secondPersonPensionBudget, 0.5);
+  const retireNeedFV2 = retireGoal2 * Math.pow(1 + inflationRate, remainingN2);
+  const retireNeedPV2 = Excel.PV(discountRate, retireYears2, -retireNeedFV2, 0, 1);
   const existingReserveFV2 =
-    Excel.FV(discountRate, remainingN2, 0, -(input.secondPersonPensionFund), 0) +
-    Excel.FV(discountRate, remainingN2, 0, -(input.secondPersonComPension), 0) +
-    Excel.FV(discountRate, remainingN2, 0, -(input.secondPersonPersonalPension), 0) +
-    Excel.PV(discountRate, input.secondPersonRetireYears, -(input.secondPersonSocialPension * 12), 0, 1);
+    Excel.FV(discountRate, remainingN2, 0, -(pensionFund2), 0) +
+    Excel.FV(discountRate, remainingN2, 0, -(comPension2), 0) +
+    Excel.FV(discountRate, remainingN2, 0, -(personalPension2), 0) +
+    Excel.PV(discountRate, retireYears2, -(socialPension2 * 12), 0, 1);
   const retireGap2 = Math.max(0, retireNeedPV2 - existingReserveFV2);
 
-  const recPension2 = input.secondPersonPayYears > 0
-    ? Math.max(0, Math.round(-Excel.PMT(discountRate, input.secondPersonPayYears, 0, retireGap2, 1) * 100) / 100)
+  const recPension2 = payYears2 > 0
+    ? Math.max(0, Math.round(-Excel.PMT(discountRate, payYears2, 0, retireGap2, 1) * 100) / 100)
     : 0;
   const existingPensionFV2 = existingReserveFV2;
-  const annualRetireGoal2 = input.secondPersonRetireGoal;
+  const annualRetireGoal2 = retireGoal2;
   const pensionGap2 = Math.round(retireGap2 * 100) / 100;
-  const payYears2 = input.secondPersonPayYears;
-  const pensionBudget2 = recPension2 <= input.secondPersonPensionBudget
+  const pensionBudget2 = recPension2 <= pensionBudget2_val
     ? '✅预算充足'
     : '⚠️预算不足，请调整比例或延长缴费期';
 
@@ -582,7 +728,7 @@ export function calculate(input: UserInput): InsuranceResult {
     input.child_社保医保, input.child_惠民保, input.child_百万医疗,
     input.child_中端医疗, input.child_高端医疗,
     childMedicalCost, childMIGap,
-    input.childMIPremiumBudget, totalHouseholdIncome, false
+    input.childMIPremiumBudget, totalHouseholdIncome, input.childAge, false
   );
   // D34 = E22
   const childMITerm = input.childMIPremiumBudget;
@@ -617,13 +763,13 @@ export function calculate(input: UserInput): InsuranceResult {
   const parentCIGap = Math.max(0, parentCIRec - parentCIExist);
   const parentCITerm = input.parentCIPremiumBudget;
   // D47 = recommendMIPlan
-  const parentMedicalCost = baseMedicalCost1;
+  const parentMedicalCost = baseMedicalCost1 * 1.5; // 老年人医疗费用约为中青年的1.5倍
   const parentMIGap = 0;
   const { type: parentMIType, reason: parentMIReason } = recommendMIPlan(
     input.parent_社保医保, input.parent_惠民保, input.parent_百万医疗,
     input.parent_中端医疗, input.parent_高端医疗,
     parentMedicalCost, parentMIGap,
-    input.parentMIPremiumBudget, totalHouseholdIncome, true
+    input.parentMIPremiumBudget, totalHouseholdIncome, 55, true
   );
   // 父母推荐最终使用新逻辑（而不是旧的固定升级链）
   const parentRecommendedMI = parentMIType;
@@ -656,7 +802,7 @@ export function calculate(input: UserInput): InsuranceResult {
   // 年度总保费（万元，用于风险评级和保费汇总表）
   const totalAnnualPrem =
     totalHealthPrem1 + totalHealthPrem2 +
-    estLifePrem1 / 10000 + estLifePrem2 / 10000 +
+    estLifePrem1 + estLifePrem2 +
     recPension1 + recPension2;
   const annualIncome = incomeConversion1 + incomeConversion2;
   const premiumToIncomeRatio = annualIncome > 0
@@ -666,7 +812,7 @@ export function calculate(input: UserInput): InsuranceResult {
   // 加权风险指数：健康险0.85 + 寿险0.35 + 养老金0.25（充分考虑各险种紧迫度）
   const weightedPrem =
     (totalHealthPrem1 + totalHealthPrem2) * 0.85 +
-    (estLifePrem1 + estLifePrem2) / 10000 * 0.35 +
+    (estLifePrem1 + estLifePrem2) * 0.35 +
     (recPension1 + recPension2) * 0.25;
   const riskIndex = annualIncome > 0
     ? Math.round(weightedPrem / annualIncome * 10000) / 100

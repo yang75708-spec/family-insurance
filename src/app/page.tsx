@@ -72,8 +72,32 @@ const O: Record<string, string[]> = {
   secondPersonLifeCoverage: ["无", "30万以内", "30-50万", "50万以内", "50-100万", "100-200万", "200万以上", "不清楚"],
   childLifeCoverage: ["无", "30万以内", "30-50万", "50万以内", "50-100万", "100-200万", "200万以上", "不清楚"],
   parentLifeCoverage: ["无", "30万以内", "30-50万", "50万以内", "50-100万", "100-200万", "200万以上", "不清楚"],
-  firstPersonLifeTerm: ["65岁", "63岁", "70岁", "终身"],
-  secondPersonLifeTerm: ["65岁", "63岁", "70岁", "终身"],
+  firstPersonLifeTerm: ["63岁", "65岁", "终身", "房贷还清或子女成年"],
+  secondPersonLifeTerm: ["63岁", "65岁", "终身", "房贷还清或子女成年"],
+  firstPersonGender: ["男性", "女性"],
+  secondPersonGender: ["男性", "女性"],
+  firstPersonHealthStatus: ["健康", "吸烟", "有病史"],
+  secondPersonHealthStatus: ["健康", "吸烟", "有病史"],
+  firstPersonExistingLifeYears: ["10年以下", "10-20年", "20年以上", "不清楚"],
+  secondPersonExistingLifeYears: ["10年以下", "10-20年", "20年以上", "不清楚"],
+  firstPersonRetireAge: ["55-59岁", "60-64岁", "65-69岁", "70岁以上"],
+  secondPersonRetireAge: ["55-59岁", "60-64岁", "65-69岁", "70岁以上"],
+  firstPersonRetireYears: ["10年以下", "10-19年", "20-29年", "30年以上"],
+  secondPersonRetireYears: ["10年以下", "10-19年", "20-29年", "30年以上"],
+  firstPersonRetireGoal: ["5万以下", "5-10万", "10-20万", "20-30万", "30万以上"],
+  secondPersonRetireGoal: ["5万以下", "5-10万", "10-20万", "20-30万", "30万以上"],
+  firstPersonPensionFund: ["无", "5万以下", "5-20万", "20-50万", "50万以上"],
+  secondPersonPensionFund: ["无", "5万以下", "5-20万", "20-50万", "50万以上"],
+  firstPersonComPension: ["无", "5万以下", "5-20万", "20-50万", "50万以上"],
+  secondPersonComPension: ["无", "5万以下", "5-20万", "20-50万", "50万以上"],
+  firstPersonPersonalPension: ["无", "5万以下", "5-20万", "20-50万", "50万以上"],
+  secondPersonPersonalPension: ["无", "5万以下", "5-20万", "20-50万", "50万以上"],
+  firstPersonSocialPension: ["0.2万以下", "0.2-0.5万", "0.5-1万", "1万以上"],
+  secondPersonSocialPension: ["0.2万以下", "0.2-0.5万", "0.5-1万", "1万以上"],
+  firstPersonPayYears: ["10年以下", "10-19年", "20-29年", "30年以上"],
+  secondPersonPayYears: ["10年以下", "10-19年", "20-29年", "30年以上"],
+  firstPersonPensionBudget: ["1万以下", "1-3万", "3-5万", "5-10万", "10万以上"],
+  secondPersonPensionBudget: ["1万以下", "1-3万", "3-5万", "5-10万", "10万以上"],
 };
 
 // ─── Pages Config ───
@@ -160,7 +184,7 @@ function PersonTabs({ result, color }: { result: Record<string, unknown>; color:
   const tabs = [{ k: "health" as const, l: "健康险" }, { k: "life" as const, l: "寿险" }, { k: "pension" as const, l: "养老金" }];
   const panels: Record<string, React.ReactNode> = {
     health: (<><R label="建议重疾险保额" value={`${Number(result.recommendedCICoverage).toFixed(0)} 万元`} /><R label="重疾险缺口" value={`${Number(result.ciGap).toFixed(0)} 万元`} trend={Number(result.ciGap) > 20 ? "bad" : "good"} /><R label="建议医疗险类型" value={String(result.recommendedMIType)} />{String(result.recommendedMIReason) && <div className="text-[10px] text-text-tertiary leading-tight mt-0.5 mb-2 pl-1 border-l-2 border-sage-200/60">{String(result.recommendedMIReason)}</div>}<R label="医疗险缺口" value={`${Number(result.miGap).toFixed(1)} 万元`} trend={Number(result.miGap) > 10 ? "bad" : "good"} /><R label="重疾险年保费" value={`${Number(result.estimatedCIPremium).toFixed(2)} 万元`} /><R label="预算检验" value={String(result.healthBudgetResult)} trend={String(result.healthBudgetResult).includes("✅") ? "good" : "bad"} /></>),
-    life: (<><R label="建议寿险保额" value={`${Number(result.recommendedLifeCoverage).toFixed(0)} 万元`} /><R label="寿险缺口" value={`${Number(result.lifeGap).toFixed(0)} 万元`} trend={Number(result.lifeGap) > 50 ? "bad" : "good"} /><R label="预估年保费" value={`${Number(result.estimatedLifePremium).toFixed(0)} 元`} /><R label="预算检验" value={String(result.lifeBudgetResult)} trend={String(result.lifeBudgetResult).includes("✅") ? "good" : "bad"} /><R label="配置建议" value={String(result.lifeTermSuggestion)} /></>),
+    life: (<><R label="建议寿险保额" value={`${Number(result.recommendedLifeCoverage).toFixed(0)} 万元`} /><R label="寿险缺口" value={`${Number(result.lifeGap).toFixed(0)} 万元`} trend={Number(result.lifeGap) > 50 ? "bad" : "good"} /><R label="预估年保费" value={`${Number(result.estimatedLifePremium).toFixed(2)} 万元`} /><R label="预算检验" value={String(result.lifeBudgetResult)} trend={String(result.lifeBudgetResult).includes("✅") ? "good" : "bad"} /><R label="配置建议" value={String(result.lifeTermSuggestion)} /></>),
     pension: (<><R label="建议年补充养老金" value={`${Number(result.recommendedPensionAnnual).toFixed(0)} 万元`} /><R label="养老金缺口" value={`${Number(result.pensionGap).toFixed(0)} 万元`} trend={Number(result.pensionGap) > 50 ? "bad" : "good"} /><R label="已有储备终值" value={`${Number(result.existingPensionFV).toFixed(0)} 万元`} /><R label="缴费年限" value={`${Number(result.payYears).toFixed(0)} 年`} /><R label="预算检验" value={String(result.pensionBudgetResult)} trend={String(result.pensionBudgetResult).includes("✅") ? "good" : "bad"} /></>),
   };
   return (
@@ -261,6 +285,21 @@ function PensionNumberItem({ label, desc, unit, value, rawVal, min, max, step, o
   );
 }
 
+function PensionSelect({ label, desc, optionsKey, value, onChange }: { label: string; desc?: string; optionsKey: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <label className="text-[11px] font-medium text-text-tertiary mb-1.5 block">
+        {label}
+        {desc && <span className="text-text-tertiary/60"> — {desc}</span>}
+      </label>
+      <select value={value} onChange={(e) => onChange(e.target.value)}
+        className="w-full text-sm h-10 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-9">
+        {(O[optionsKey] || []).map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+      </select>
+    </div>
+  );
+}
+
 function PensionToggle({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
   return (
     <div>
@@ -309,6 +348,7 @@ export default function Home() {
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
   const [savedData, setSavedData] = useState<UserInput | null>(null);
   const [rawValues, setRawValues] = useState<Record<string, string>>({});
+  const [hoveredBar, setHoveredBar] = useState<string | null>(null);
 
   const result = useMemo<InsuranceResult>(() => calculate(input), [input]);
   const handle = useCallback((k: string, v: unknown) => setInput((p) => setN(p, k, v)), []);
@@ -330,6 +370,17 @@ export default function Home() {
   const clearRawVal = useCallback((k: string) => {
     setRawValues(p => { const n = { ...p }; delete n[k]; return n; });
   }, []);
+
+  const renderBarTooltip = useCallback(({ active, payload }: any) => {
+    if (!active || !payload || !hoveredBar) return null;
+    const item = payload.find((p: any) => p.dataKey === hoveredBar);
+    if (!item) return null;
+    return (
+      <div className="glass rounded-xl px-3 py-2 shadow-md border border-white/50">
+        <span className="text-sm font-medium" style={{ color: item.color }}>{item.dataKey}：{item.value.toFixed(1)} 万元</span>
+      </div>
+    );
+  }, [hoveredBar]);
 
 
   // 恢复检测：检查 localStorage 是否有保存的数据
@@ -378,6 +429,8 @@ export default function Home() {
   const pieData = useMemo(() => [
     { name: "重疾险保费", value: Math.round((result.firstPerson.estimatedCIPremium + result.secondPerson.estimatedCIPremium) * 100) / 100 },
     { name: "医疗险保费", value: Math.round((result.firstPerson.estimatedMIPremium + result.secondPerson.estimatedMIPremium) * 100) / 100 },
+    { name: "寿险保费", value: Math.round((result.firstPerson.estimatedLifePremium + result.secondPerson.estimatedLifePremium) * 100) / 100 },
+    { name: "养老金年缴", value: Math.round((result.firstPerson.recommendedPensionAnnual + result.secondPerson.recommendedPensionAnnual) * 100) / 100 },
   ].filter(i => i.value > 0), [result]);
 
   const LABELS = ["欢迎", "家庭信息", "财务状况", "健康险", "寿险", "养老金", "结果"];
@@ -505,8 +558,8 @@ export default function Home() {
                 </div>
               )}
 
-              {/* ═══ Input Pages (1-5, special case step 3 & 5) ═══ */}
-              {step >= 1 && step <= 5 && step !== 3 && step !== 5 && (
+              {/* ═══ Input Pages (1-2) ═══ */}
+              {(step === 1 || step === 2) && (
                 <div className="max-w-2xl mx-auto">
                   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-8">
                     <div className="w-11 h-11 rounded-xl bg-sage-50 flex items-center justify-center">
@@ -517,12 +570,233 @@ export default function Home() {
                       <p className="text-xs text-text-tertiary">{PAGES[step - 1].subtitle}</p>
                     </div>
                   </motion.div>
-                  <div className="space-y-4">
-                    {PAGES[step - 1].questions.map((q, i) => (
-                      <QuestionItem key={q.key} q={q} val={(input as unknown as Record<string, unknown>)[q.key]} onChange={handle}
-                        rawVal={rawValues[q.key]} onTextChange={handleTextInput} onTextBlur={clearRawVal} index={i} />
-                    ))}
-                  </div>
+
+                  {step === 1 && (
+                    <div className="space-y-4">
+                      {/* 第一经济支柱 */}
+                      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0 }} className="glass rounded-card p-5">
+                        <h3 className="text-sm font-semibold text-text-primary mb-3.5 flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-xl bg-sage-50 flex items-center justify-center">
+                            <svg className="w-4 h-4 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" dangerouslySetInnerHTML={{ __html: I.user }} />
+                          </div>
+                          第一经济支柱
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3.5">
+                          <div>
+                            <label className="text-[11px] font-medium text-text-tertiary mb-1 block">年龄</label>
+                            <input type="text" inputMode="decimal" value={rawValues['firstPersonAge'] ?? (input.firstPersonAge === undefined || input.firstPersonAge === null ? '' : String(input.firstPersonAge))}
+                              onChange={(e) => { const r = e.target.value; if (/^-?\d*\.?\d*$/.test(r)) handleTextInput('firstPersonAge', r); }}
+                              onFocus={(e) => e.target.select()} onBlur={() => clearRawVal('firstPersonAge')}
+                              className="w-full text-sm h-9 px-3.5 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary" />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-text-tertiary mb-1 block">性别</label>
+                            <select value={input.firstPersonGender} onChange={(e) => handle('firstPersonGender', e.target.value)}
+                              className="w-full text-sm h-9 px-3.5 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-8">
+                              {O.firstPersonGender.map((o) => <option key={o} value={o}>{o}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-text-tertiary mb-1 block">年税后收入</label>
+                            <select value={input.firstPersonIncome} onChange={(e) => handle('firstPersonIncome', e.target.value)}
+                              className="w-full text-sm h-9 px-3.5 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-8">
+                              <option value="" disabled>请选择</option>
+                              {O.firstPersonIncome.map((o) => <option key={o} value={o}>{o}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-text-tertiary mb-1 block">职业稳定性</label>
+                            <select value={input.incomeStability} onChange={(e) => handle('incomeStability', e.target.value)}
+                              className="w-full text-sm h-9 px-3.5 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-8">
+                              <option value="" disabled>请选择</option>
+                              {O.incomeStability.map((o) => <option key={o} value={o}>{o}</option>)}
+                            </select>
+                          </div>
+                        </div>
+                        {/* 健康状况 */}
+                        <div className="mt-3.5">
+                          <label className="text-[11px] font-medium text-text-tertiary mb-1.5 block">健康状况</label>
+                          <div className="flex gap-2">
+                            {O.firstPersonHealthStatus.map((opt) => (
+                              <button key={opt} onClick={() => handle("firstPersonHealthStatus", opt)}
+                                className={cn(
+                                  "flex-1 text-sm h-9 px-3 rounded-input border transition-all font-medium",
+                                  input.firstPersonHealthStatus === opt
+                                    ? "bg-sage-300/80 text-white border-sage-300"
+                                    : "bg-white/60 text-text-tertiary border-sage-200/50 hover:border-sage-300 hover:text-sage-600"
+                                )}>{opt}</button>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+
+                      {/* 第二经济支柱 */}
+                      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.05 }} className="glass rounded-card p-5">
+                        <h3 className="text-sm font-semibold text-text-primary mb-3.5 flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-xl bg-sage-50 flex items-center justify-center">
+                            <svg className="w-4 h-4 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" dangerouslySetInnerHTML={{ __html: I.user }} />
+                          </div>
+                          第二经济支柱
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3.5">
+                          <div>
+                            <label className="text-[11px] font-medium text-text-tertiary mb-1 block">年龄</label>
+                            <input type="text" inputMode="decimal" value={rawValues['secondPersonAge'] ?? (input.secondPersonAge === undefined || input.secondPersonAge === null ? '' : String(input.secondPersonAge))}
+                              onChange={(e) => { const r = e.target.value; if (/^-?\d*\.?\d*$/.test(r)) handleTextInput('secondPersonAge', r); }}
+                              onFocus={(e) => e.target.select()} onBlur={() => clearRawVal('secondPersonAge')}
+                              className="w-full text-sm h-9 px-3.5 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary" />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-text-tertiary mb-1 block">性别</label>
+                            <select value={input.secondPersonGender} onChange={(e) => handle('secondPersonGender', e.target.value)}
+                              className="w-full text-sm h-9 px-3.5 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-8">
+                              {O.secondPersonGender.map((o) => <option key={o} value={o}>{o}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-text-tertiary mb-1 block">年税后收入</label>
+                            <select value={input.secondPersonIncome} onChange={(e) => handle('secondPersonIncome', e.target.value)}
+                              className="w-full text-sm h-9 px-3.5 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-8">
+                              <option value="" disabled>请选择</option>
+                              {O.secondPersonIncome.map((o) => <option key={o} value={o}>{o}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-text-tertiary mb-1 block">职业稳定性</label>
+                            <select value={input.incomeStability2} onChange={(e) => handle('incomeStability2', e.target.value)}
+                              className="w-full text-sm h-9 px-3.5 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-8">
+                              <option value="" disabled>请选择</option>
+                              {O.incomeStability2.map((o) => <option key={o} value={o}>{o}</option>)}
+                            </select>
+                          </div>
+                        </div>
+                        {/* 健康状况 */}
+                        <div className="mt-3.5">
+                          <label className="text-[11px] font-medium text-text-tertiary mb-1.5 block">健康状况</label>
+                          <div className="flex gap-2">
+                            {O.secondPersonHealthStatus.map((opt) => (
+                              <button key={opt} onClick={() => handle("secondPersonHealthStatus", opt)}
+                                className={cn(
+                                  "flex-1 text-sm h-9 px-3 rounded-input border transition-all font-medium",
+                                  input.secondPersonHealthStatus === opt
+                                    ? "bg-sage-300/80 text-white border-sage-300"
+                                    : "bg-white/60 text-text-tertiary border-sage-200/50 hover:border-sage-300 hover:text-sage-600"
+                                )}>{opt}</button>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+
+                      {/* 家庭情况 */}
+                      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1 }} className="glass rounded-card p-5">
+                        <h3 className="text-sm font-semibold text-text-primary mb-3.5 flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-xl bg-sage-50 flex items-center justify-center">
+                            <svg className="w-4 h-4 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" dangerouslySetInnerHTML={{ __html: I.home }} />
+                          </div>
+                          家庭情况
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-3.5">
+                          <div>
+                            <label className="text-[11px] font-medium text-text-tertiary mb-1 block">子女数量</label>
+                            <input type="text" inputMode="decimal" value={rawValues['childCount'] ?? (input.childCount === undefined || input.childCount === null ? '' : String(input.childCount))}
+                              onChange={(e) => { const r = e.target.value; if (/^-?\d*\.?\d*$/.test(r)) handleTextInput('childCount', r); }}
+                              onFocus={(e) => e.target.select()} onBlur={() => clearRawVal('childCount')}
+                              className="w-full text-sm h-9 px-3.5 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary" />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-text-tertiary mb-1 block">赡养人数</label>
+                            <input type="text" inputMode="decimal" value={rawValues['parentSupportCount'] ?? (input.parentSupportCount === undefined || input.parentSupportCount === null ? '' : String(input.parentSupportCount))}
+                              onChange={(e) => { const r = e.target.value; if (/^-?\d*\.?\d*$/.test(r)) handleTextInput('parentSupportCount', r); }}
+                              onFocus={(e) => e.target.select()} onBlur={() => clearRawVal('parentSupportCount')}
+                              className="w-full text-sm h-9 px-3.5 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary" />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-text-tertiary mb-1 block">最小子女年龄</label>
+                            <input type="text" inputMode="decimal" value={rawValues['childAge'] ?? (input.childAge === undefined || input.childAge === null ? '' : String(input.childAge))}
+                              onChange={(e) => { const r = e.target.value; if (/^-?\d*\.?\d*$/.test(r)) handleTextInput('childAge', r); }}
+                              onFocus={(e) => e.target.select()} onBlur={() => clearRawVal('childAge')}
+                              className="w-full text-sm h-9 px-3.5 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary" />
+                          </div>
+                        </div>
+                      </motion.div>
+                    </div>
+                  )}
+
+                  {step === 2 && (
+                    <div className="space-y-4">
+                      {/* 家庭负债 */}
+                      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0 }} className="glass rounded-card p-5">
+                        <h3 className="text-sm font-semibold text-text-primary mb-3.5 flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-xl bg-sage-50 flex items-center justify-center">
+                            <svg className="w-4 h-4 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" dangerouslySetInnerHTML={{ __html: I.bank }} />
+                          </div>
+                          家庭负债
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3.5">
+                          <div>
+                            <label className="text-[11px] font-medium text-text-tertiary mb-1 block">房贷余额</label>
+                            <select value={input.mortgageBalance} onChange={(e) => handle('mortgageBalance', e.target.value)}
+                              className="w-full text-sm h-9 px-3.5 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-8">
+                              <option value="" disabled>请选择</option>
+                              {O.mortgageBalance.map((o) => <option key={o} value={o}>{o}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-text-tertiary mb-1 block">其他贷款</label>
+                            <select value={input.otherLoanAmount} onChange={(e) => handle('otherLoanAmount', e.target.value)}
+                              className="w-full text-sm h-9 px-3.5 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-8">
+                              <option value="" disabled>请选择</option>
+                              {O.otherLoanAmount.map((o) => <option key={o} value={o}>{o}</option>)}
+                            </select>
+                          </div>
+                        </div>
+                      </motion.div>
+
+                      {/* 资产与开支 */}
+                      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.05 }} className="glass rounded-card p-5">
+                        <h3 className="text-sm font-semibold text-text-primary mb-3.5 flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-xl bg-sage-50 flex items-center justify-center">
+                            <svg className="w-4 h-4 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" dangerouslySetInnerHTML={{ __html: I.wallet }} />
+                          </div>
+                          资产与开支
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3.5">
+                          <div>
+                            <label className="text-[11px] font-medium text-text-tertiary mb-1 block">银行存款</label>
+                            <select value={input.bankDeposit} onChange={(e) => handle('bankDeposit', e.target.value)}
+                              className="w-full text-sm h-9 px-3.5 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-8">
+                              <option value="" disabled>请选择</option>
+                              {O.bankDeposit.map((o) => <option key={o} value={o}>{o}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-text-tertiary mb-1 block">低风险理财</label>
+                            <select value={input.lowRiskInvestment} onChange={(e) => handle('lowRiskInvestment', e.target.value)}
+                              className="w-full text-sm h-9 px-3.5 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-8">
+                              <option value="" disabled>请选择</option>
+                              {O.lowRiskInvestment.map((o) => <option key={o} value={o}>{o}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-text-tertiary mb-1 block">年度刚性开销</label>
+                            <select value={input.annualExpense} onChange={(e) => handle('annualExpense', e.target.value)}
+                              className="w-full text-sm h-9 px-3.5 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-8">
+                              <option value="" disabled>请选择</option>
+                              {O.annualExpense.map((o) => <option key={o} value={o}>{o}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-text-tertiary mb-1 block">居住城市</label>
+                            <select value={input.city} onChange={(e) => handle('city', e.target.value)}
+                              className="w-full text-sm h-9 px-3.5 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-8">
+                              <option value="" disabled>请选择</option>
+                              {O.city.map((o) => <option key={o} value={o}>{o}</option>)}
+                            </select>
+                          </div>
+                        </div>
+                      </motion.div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -547,15 +821,15 @@ export default function Home() {
                         第一经济支柱
                       </h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <PensionNumberItem label="计划退休年龄" desc="越早退休需要储备越多养老金" unit="岁" value={input.firstPersonRetireAge} min={50} max={70} rawVal={rawValues['firstPersonRetireAge']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="firstPersonRetireAge" onChange={(v) => handle("firstPersonRetireAge", v)} />
-                        <PensionNumberItem label="退休后生活年限" desc="预计退休后需要维持生活质量的年数" unit="年" value={input.firstPersonRetireYears} min={5} max={40} rawVal={rawValues['firstPersonRetireYears']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="firstPersonRetireYears" onChange={(v) => handle("firstPersonRetireYears", v)} />
-                        <PensionNumberItem label="退休后年生活目标" desc="退休后每年需要的生活费用" unit="万元" value={input.firstPersonRetireGoal} min={0} step={0.5} rawVal={rawValues['firstPersonRetireGoal']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="firstPersonRetireGoal" onChange={(v) => handle("firstPersonRetireGoal", v)} />
+                        <PensionSelect label="计划退休年龄" desc="越早退休需要储备越多养老金" optionsKey="firstPersonRetireAge" value={input.firstPersonRetireAge} onChange={(v) => handle("firstPersonRetireAge", v)} />
+                        <PensionSelect label="退休后生活年限" desc="预计退休后需要维持生活质量的年数" optionsKey="firstPersonRetireYears" value={input.firstPersonRetireYears} onChange={(v) => handle("firstPersonRetireYears", v)} />
+                        <PensionSelect label="退休后年生活目标" desc="退休后每年需要的生活费用" optionsKey="firstPersonRetireGoal" value={input.firstPersonRetireGoal} onChange={(v) => handle("firstPersonRetireGoal", v)} />
                         <PensionToggle label="是否已有养老资金" value={input.firstPersonHasPension} onChange={(v) => handle("firstPersonHasPension", v)} />
                       </div>
                       {input.firstPersonHasPension && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-4 border-t border-sage-100">
-                          <PensionNumberItem label="养老专项存款" desc="已预留的养老资金" unit="万元" value={input.firstPersonPensionFund} min={0} rawVal={rawValues['firstPersonPensionFund']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="firstPersonPensionFund" onChange={(v) => handle("firstPersonPensionFund", v)} />
-                          <PensionNumberItem label="商业养老金价值" unit="万元" value={input.firstPersonComPension} min={0} rawVal={rawValues['firstPersonComPension']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="firstPersonComPension" onChange={(v) => handle("firstPersonComPension", v)} />
+                          <PensionSelect label="养老专项存款" desc="已预留的养老资金" optionsKey="firstPersonPensionFund" value={input.firstPersonPensionFund} onChange={(v) => handle("firstPersonPensionFund", v)} />
+                          <PensionSelect label="商业养老金价值" optionsKey="firstPersonComPension" value={input.firstPersonComPension} onChange={(v) => handle("firstPersonComPension", v)} />
                         </motion.div>
                       )}
                     </motion.div>
@@ -567,15 +841,15 @@ export default function Home() {
                         第二经济支柱
                       </h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <PensionNumberItem label="计划退休年龄" unit="岁" value={input.secondPersonRetireAge} min={50} max={70} rawVal={rawValues['secondPersonRetireAge']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="secondPersonRetireAge" onChange={(v) => handle("secondPersonRetireAge", v)} />
-                        <PensionNumberItem label="退休后生活年限" unit="年" value={input.secondPersonRetireYears} min={5} max={40} rawVal={rawValues['secondPersonRetireYears']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="secondPersonRetireYears" onChange={(v) => handle("secondPersonRetireYears", v)} />
-                        <PensionNumberItem label="退休后年生活目标" unit="万元" value={input.secondPersonRetireGoal} min={0} step={0.5} rawVal={rawValues['secondPersonRetireGoal']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="secondPersonRetireGoal" onChange={(v) => handle("secondPersonRetireGoal", v)} />
+                        <PensionSelect label="计划退休年龄" optionsKey="secondPersonRetireAge" value={input.secondPersonRetireAge} onChange={(v) => handle("secondPersonRetireAge", v)} />
+                        <PensionSelect label="退休后生活年限" optionsKey="secondPersonRetireYears" value={input.secondPersonRetireYears} onChange={(v) => handle("secondPersonRetireYears", v)} />
+                        <PensionSelect label="退休后年生活目标" optionsKey="secondPersonRetireGoal" value={input.secondPersonRetireGoal} onChange={(v) => handle("secondPersonRetireGoal", v)} />
                         <PensionToggle label="是否已有养老资金" value={input.secondPersonHasPension} onChange={(v) => handle("secondPersonHasPension", v)} />
                       </div>
                       {input.secondPersonHasPension && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-4 border-t border-sage-100">
-                          <PensionNumberItem label="养老专项存款" desc="已预留的养老资金" unit="万元" value={input.secondPersonPensionFund} min={0} rawVal={rawValues['secondPersonPensionFund']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="secondPersonPensionFund" onChange={(v) => handle("secondPersonPensionFund", v)} />
-                          <PensionNumberItem label="商业养老金价值" unit="万元" value={input.secondPersonComPension} min={0} rawVal={rawValues['secondPersonComPension']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="secondPersonComPension" onChange={(v) => handle("secondPersonComPension", v)} />
+                          <PensionSelect label="养老专项存款" desc="已预留的养老资金" optionsKey="secondPersonPensionFund" value={input.secondPersonPensionFund} onChange={(v) => handle("secondPersonPensionFund", v)} />
+                          <PensionSelect label="商业养老金价值" optionsKey="secondPersonComPension" value={input.secondPersonComPension} onChange={(v) => handle("secondPersonComPension", v)} />
                         </motion.div>
                       )}
                     </motion.div>
@@ -588,14 +862,14 @@ export default function Home() {
                       </h3>
                       <p className="text-[11px] text-text-tertiary mb-4">社保养老金和个人养老金账户会纳入已有储备计算</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <PensionNumberItem label="第一支柱个人养老金账户" desc="个人养老金账户现有余额" unit="万元" value={input.firstPersonPersonalPension} min={0} rawVal={rawValues['firstPersonPersonalPension']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="firstPersonPersonalPension" onChange={(v) => handle("firstPersonPersonalPension", v)} />
-                        <PensionNumberItem label="第一支柱社保月养老金估计" desc="预计退休后每月可领取" unit="万元" value={input.firstPersonSocialPension} min={0} rawVal={rawValues['firstPersonSocialPension']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="firstPersonSocialPension" onChange={(v) => handle("firstPersonSocialPension", v)} />
-                        <PensionNumberItem label="第一支柱缴费年限" desc="计划缴纳养老金的年数" unit="年" value={input.firstPersonPayYears} min={0} max={40} rawVal={rawValues['firstPersonPayYears']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="firstPersonPayYears" onChange={(v) => handle("firstPersonPayYears", v)} />
-                        <PensionNumberItem label="第一支柱年预算" unit="万元" value={input.firstPersonPensionBudget} min={0} rawVal={rawValues['firstPersonPensionBudget']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="firstPersonPensionBudget" onChange={(v) => handle("firstPersonPensionBudget", v)} />
-                        <PensionNumberItem label="第二支柱个人养老金账户" unit="万元" value={input.secondPersonPersonalPension} min={0} rawVal={rawValues['secondPersonPersonalPension']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="secondPersonPersonalPension" onChange={(v) => handle("secondPersonPersonalPension", v)} />
-                        <PensionNumberItem label="第二支柱社保月养老金估计" unit="万元" value={input.secondPersonSocialPension} min={0} rawVal={rawValues['secondPersonSocialPension']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="secondPersonSocialPension" onChange={(v) => handle("secondPersonSocialPension", v)} />
-                        <PensionNumberItem label="第二支柱缴费年限" unit="年" value={input.secondPersonPayYears} min={0} max={40} rawVal={rawValues['secondPersonPayYears']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="secondPersonPayYears" onChange={(v) => handle("secondPersonPayYears", v)} />
-                        <PensionNumberItem label="第二支柱年预算" unit="万元" value={input.secondPersonPensionBudget} min={0} rawVal={rawValues['secondPersonPensionBudget']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="secondPersonPensionBudget" onChange={(v) => handle("secondPersonPensionBudget", v)} />
+                        <PensionSelect label="第一支柱个人养老金账户" desc="个人养老金账户现有余额" optionsKey="firstPersonPersonalPension" value={input.firstPersonPersonalPension} onChange={(v) => handle("firstPersonPersonalPension", v)} />
+                        <PensionSelect label="第一支柱社保月养老金估计" desc="预计退休后每月可领取" optionsKey="firstPersonSocialPension" value={input.firstPersonSocialPension} onChange={(v) => handle("firstPersonSocialPension", v)} />
+                        <PensionSelect label="第一支柱缴费年限" desc="计划缴纳养老金的年数" optionsKey="firstPersonPayYears" value={input.firstPersonPayYears} onChange={(v) => handle("firstPersonPayYears", v)} />
+                        <PensionSelect label="第一支柱年预算" optionsKey="firstPersonPensionBudget" value={input.firstPersonPensionBudget} onChange={(v) => handle("firstPersonPensionBudget", v)} />
+                        <PensionSelect label="第二支柱个人养老金账户" optionsKey="secondPersonPersonalPension" value={input.secondPersonPersonalPension} onChange={(v) => handle("secondPersonPersonalPension", v)} />
+                        <PensionSelect label="第二支柱社保月养老金估计" optionsKey="secondPersonSocialPension" value={input.secondPersonSocialPension} onChange={(v) => handle("secondPersonSocialPension", v)} />
+                        <PensionSelect label="第二支柱缴费年限" optionsKey="secondPersonPayYears" value={input.secondPersonPayYears} onChange={(v) => handle("secondPersonPayYears", v)} />
+                        <PensionSelect label="第二支柱年预算" optionsKey="secondPersonPensionBudget" value={input.secondPersonPensionBudget} onChange={(v) => handle("secondPersonPensionBudget", v)} />
                       </div>
                     </motion.div>
                   </div>
@@ -740,6 +1014,118 @@ export default function Home() {
                 </div>
               )}
 
+              {/* ═══ Life Insurance (step 4) ═══ */}
+              {step === 4 && (
+                <div className="max-w-2xl mx-auto">
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-8">
+                    <div className="w-11 h-11 rounded-xl bg-sage-50 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" dangerouslySetInnerHTML={{ __html: PAGE_ICONS[3] }} />
+                    </div>
+                    <div>
+                      <h1 className="text-xl font-bold text-text-primary font-display">寿险配置</h1>
+                      <p className="text-xs text-text-tertiary">寿险持有情况与偏好</p>
+                    </div>
+                  </motion.div>
+
+                  <div className="space-y-6">
+                    {/* 第一经济支柱 */}
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="glass rounded-card p-6">
+                      <h3 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-lg bg-sage-300/80 flex items-center justify-center text-white text-[10px] font-bold">1</span>
+                        第一经济支柱
+                      </h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-[11px] font-medium text-text-tertiary mb-1.5 block">偏好的保障期限</label>
+                          <select value={input.firstPersonLifeTerm} onChange={(e) => handle("firstPersonLifeTerm", e.target.value)}
+                            className="w-full text-sm h-10 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-9">
+                            {O.firstPersonLifeTerm.map((o) => <option key={o} value={o}>{o}</option>)}
+                          </select>
+                        </div>
+                        <PensionNumberItem label="年度寿险预算" desc="每年愿意投入寿险的保费" unit="万元" value={input.firstPersonLifeBudget} min={0}
+                          rawVal={rawValues['firstPersonLifeBudget']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="firstPersonLifeBudget"
+                          onChange={(v) => handle("firstPersonLifeBudget", v)} />
+                        <PensionToggle label="是否已有寿险" value={input.firstPersonHasLifeIns} onChange={(v) => handle("firstPersonHasLifeIns", v)} />
+                        {input.firstPersonHasLifeIns && (
+                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-4 pt-4 border-t border-sage-100">
+                            <div>
+                              <label className="text-[11px] font-medium text-text-tertiary mb-1.5 block">已有寿险保额</label>
+                              <select value={input.firstPersonLifeCoverage} onChange={(e) => handle("firstPersonLifeCoverage", e.target.value)}
+                                className="w-full text-sm h-10 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-9">
+                                {O.firstPersonLifeCoverage.map((o) => <option key={o} value={o}>{o}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-[11px] font-medium text-text-tertiary mb-1.5 block">已有寿险剩余年限</label>
+                              <select value={input.firstPersonExistingLifeYears} onChange={(e) => handle("firstPersonExistingLifeYears", e.target.value)}
+                                className="w-full text-sm h-10 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-9">
+                                {O.firstPersonExistingLifeYears.map((o) => <option key={o} value={o}>{o}</option>)}
+                              </select>
+                            </div>
+                          </motion.div>
+                        )}
+                      </div>
+                    </motion.div>
+
+                    {/* 第二经济支柱 */}
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass rounded-card p-6">
+                      <h3 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-lg bg-sage-300/80 flex items-center justify-center text-white text-[10px] font-bold">2</span>
+                        第二经济支柱
+                      </h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-[11px] font-medium text-text-tertiary mb-1.5 block">偏好的保障期限</label>
+                          <select value={input.secondPersonLifeTerm} onChange={(e) => handle("secondPersonLifeTerm", e.target.value)}
+                            className="w-full text-sm h-10 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-9">
+                            {O.secondPersonLifeTerm.map((o) => <option key={o} value={o}>{o}</option>)}
+                          </select>
+                        </div>
+                        <PensionNumberItem label="年度寿险预算" unit="万元" value={input.secondPersonLifeBudget} min={0}
+                          rawVal={rawValues['secondPersonLifeBudget']} onTextChange={handleTextInput} onTextBlur={clearRawVal} textKey="secondPersonLifeBudget"
+                          onChange={(v) => handle("secondPersonLifeBudget", v)} />
+                        <PensionToggle label="是否已有寿险" value={input.secondPersonHasLifeIns} onChange={(v) => handle("secondPersonHasLifeIns", v)} />
+                        {input.secondPersonHasLifeIns && (
+                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-4 pt-4 border-t border-sage-100">
+                            <div>
+                              <label className="text-[11px] font-medium text-text-tertiary mb-1.5 block">已有寿险保额</label>
+                              <select value={input.secondPersonLifeCoverage} onChange={(e) => handle("secondPersonLifeCoverage", e.target.value)}
+                                className="w-full text-sm h-10 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-9">
+                                {O.secondPersonLifeCoverage.map((o) => <option key={o} value={o}>{o}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-[11px] font-medium text-text-tertiary mb-1.5 block">已有寿险剩余年限</label>
+                              <select value={input.secondPersonExistingLifeYears} onChange={(e) => handle("secondPersonExistingLifeYears", e.target.value)}
+                                className="w-full text-sm h-10 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-9">
+                                {O.secondPersonExistingLifeYears.map((o) => <option key={o} value={o}>{o}</option>)}
+                              </select>
+                            </div>
+                          </motion.div>
+                        )}
+                      </div>
+                    </motion.div>
+
+                    {/* 子女父母配置 */}
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="glass rounded-card p-6">
+                      <h3 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-lg bg-sage-100 flex items-center justify-center text-text-tertiary text-[10px] font-bold">⚙</span>
+                        子女与父母配置
+                      </h3>
+                      <div>
+                        <label className="text-[11px] font-medium text-text-tertiary mb-1.5 block">是否为子女和父母配置寿险？</label>
+                        <div className="relative max-w-md">
+                          <select value={input.childParentLifeIns} onChange={(e) => handle("childParentLifeIns", e.target.value)}
+                            className="w-full text-sm h-10 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-9">
+                            {O.childParentLifeIns.map((o) => <option key={o} value={o}>{o}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                </div>
+              )}
+
               {/* ═══ Result (6) ═══ */}
               {step === 6 && (
                 <div className="max-w-4xl mx-auto space-y-6">
@@ -776,11 +1162,24 @@ export default function Home() {
                     <div><div className="text-sm font-semibold text-text-primary">配置优先级</div><div className="text-sm text-text-secondary mt-0.5">{result.priority}</div></div>
                   </motion.div>
 
+                  {/* 寿险计算说明 */}
+                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-card p-5 flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-full bg-sage-50 flex items-center justify-center shrink-0 mt-0.5">
+                      <svg className="w-5 h-5 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-text-primary">寿险保障缺口计算说明</div>
+                      <div className="text-xs text-text-secondary mt-1.5 leading-relaxed">
+                        寿险保额采用<strong>责任法</strong>与<strong>收入法</strong>取最大值：责任法覆盖房贷 × 收入占比 + 年度开销 × 保障年限 + 子女教育 + 父母赡养 − 已有流动资产；收入法覆盖年收入 × 剩余工作年限 × 职业风险系数。保费基于年龄和性别对应的身故发生率表计算。
+                      </div>
+                    </div>
+                  </motion.div>
+
                   {/* 缺口图表 */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="glass rounded-card p-6">
                       <h3 className="text-sm font-semibold text-text-primary mb-4">保障缺口概览</h3>
-                      <div className="h-56"><ResponsiveContainer width="100%" height="100%"><BarChart data={gapData} barSize={28}><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#8B948E" }} /><YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#8B948E" }} /><Tooltip contentStyle={{ borderRadius: 16, border: "1px solid rgba(255,255,255,0.5)", backdropFilter: "blur(20px)" }} /><Bar dataKey="重疾险缺口" fill={C.blue} radius={[6, 6, 0, 0]} /><Bar dataKey="医疗险缺口" fill={C.sage} radius={[6, 6, 0, 0]} /><Bar dataKey="寿险缺口" fill={C.warm} radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer></div>
+                      <div className="h-56"><ResponsiveContainer width="100%" height="100%"><BarChart data={gapData} barSize={28} onMouseLeave={() => setHoveredBar(null)}><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#8B948E" }} /><YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#8B948E" }} /><Tooltip content={renderBarTooltip} /><Bar dataKey="重疾险缺口" fill={C.blue} radius={[6, 6, 0, 0]} onMouseEnter={() => setHoveredBar("重疾险缺口")} /><Bar dataKey="医疗险缺口" fill={C.sage} radius={[6, 6, 0, 0]} onMouseEnter={() => setHoveredBar("医疗险缺口")} /><Bar dataKey="寿险缺口" fill={C.warm} radius={[6, 6, 0, 0]} onMouseEnter={() => setHoveredBar("寿险缺口")} /></BarChart></ResponsiveContainer></div>
                     </motion.div>
                     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass rounded-card p-6">
                       <h3 className="text-sm font-semibold text-text-primary mb-4">建议保费结构</h3>
@@ -837,11 +1236,11 @@ export default function Home() {
                           {(() => {
                             const p1CI = result.firstPerson.estimatedCIPremium;
                             const p1MI = result.firstPerson.estimatedMIPremium;
-                            const p1Life = result.firstPerson.estimatedLifePremium / 10000;
+                            const p1Life = result.firstPerson.estimatedLifePremium;
                             const p1Pension = result.firstPerson.recommendedPensionAnnual;
                             const p2CI = result.secondPerson.estimatedCIPremium;
                             const p2MI = result.secondPerson.estimatedMIPremium;
-                            const p2Life = result.secondPerson.estimatedLifePremium / 10000;
+                            const p2Life = result.secondPerson.estimatedLifePremium;
                             const p2Pension = result.secondPerson.recommendedPensionAnnual;
                             const rows = [
                               { l: "重疾险保费", p1: p1CI, p2: p2CI },

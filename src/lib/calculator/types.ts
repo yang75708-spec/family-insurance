@@ -86,6 +86,15 @@ export interface UserInput {
   elderHighEndMI: boolean;
   childHighEndMI: boolean;
 
+  firstPersonGender: string;        // 性别
+  secondPersonGender: string;       // 性别
+  firstPersonHealthStatus: string;  // 健康状态
+  secondPersonHealthStatus: string; // 健康状态
+  firstPersonHasLifeIns: boolean;   // 是否有寿险
+  secondPersonHasLifeIns: boolean;  // 是否有寿险
+  firstPersonExistingLifeYears: string; // 已有寿险剩余年限
+  secondPersonExistingLifeYears: string;// 已有寿险剩余年限
+
   // 寿险输入
   firstPersonLifeIns: string;    // B28
   secondPersonLifeIns: string;   // B29
@@ -98,7 +107,7 @@ export interface UserInput {
   childLifeCoverage: string;     // D31
   parentLifeCoverage: string;    // D32
 
-  firstPersonLifeTerm: string;   // B35
+  firstPersonLifeTerm: string;   // B35 - 63岁/65岁/终身/房贷还清或子女成年
   secondPersonLifeTerm: string;  // B36
   firstPersonLifeBudget: number; // D35
   secondPersonLifeBudget: number;// D36
@@ -106,29 +115,29 @@ export interface UserInput {
   // 养老金输入
   firstPersonHasPension: boolean;  // 是否有养老资金
   secondPersonHasPension: boolean;
-  firstPersonRetireAge: number;  // B42
-  secondPersonRetireAge: number; // B43
-  firstPersonRetireYears: number;// C42
-  secondPersonRetireYears: number;// C43
-  firstPersonRetireGoal: number; // D42
-  secondPersonRetireGoal: number;// D43
+  firstPersonRetireAge: string;  // B42 - 区间
+  secondPersonRetireAge: string; // B43
+  firstPersonRetireYears: string;// C42
+  secondPersonRetireYears: string;// C43
+  firstPersonRetireGoal: string; // D42
+  secondPersonRetireGoal: string;// D43
   firstPersonSalaryGrowth: number;// E42
   secondPersonSalaryGrowth: number;// E43
 
-  firstPersonPensionFund: number;// B46
-  secondPersonPensionFund: number;// B47
-  firstPersonComPension: number; // C46
-  secondPersonComPension: number;// C47
-  firstPersonPersonalPension: number;// D46
-  secondPersonPersonalPension: number;// D47
-  firstPersonSocialPension: number;// E46
-  secondPersonSocialPension: number;// E47
+  firstPersonPensionFund: string;// B46
+  secondPersonPensionFund: string;// B47
+  firstPersonComPension: string; // C46
+  secondPersonComPension: string;// C47
+  firstPersonPersonalPension: string;// D46
+  secondPersonPersonalPension: string;// D47
+  firstPersonSocialPension: string;// E46
+  secondPersonSocialPension: string;// E47
 
   expectedReturn: number;        // B49
-  firstPersonPayYears: number;   // B52
-  secondPersonPayYears: number;  // B53
-  firstPersonPensionBudget: number;// D52
-  secondPersonPensionBudget: number;// D53
+  firstPersonPayYears: string;   // B52
+  secondPersonPayYears: string;  // B53
+  firstPersonPensionBudget: string;// D52
+  secondPersonPensionBudget: string;// D53
 }
 
 // ====== 中间计算结果（对应家庭保险决策表中间列） ======
