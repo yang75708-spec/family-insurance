@@ -7,7 +7,7 @@ const RETIRE_YEARS_MAP: Record<string, number> = { '10年以下': 5, '10-19年':
 const RETIRE_GOAL_MAP: Record<string, number> = { '5万以下': 3, '5-10万': 8, '10-20万': 15, '20-30万': 25, '30万以上': 35 };
 const PENSION_FUND_MAP: Record<string, number> = { '无': 0, '5万以下': 2, '5-20万': 12, '20-50万': 35, '50万以上': 60 };
 const SOCIAL_PENSION_MAP: Record<string, number> = { '0.2万以下': 0.1, '0.2-0.5万': 0.35, '0.5-1万': 0.75, '1万以上': 1.2 };
-const PAY_YEARS_MAP: Record<string, number> = { '10年以下': 5, '10-19年': 15, '20-29年': 25, '30年以上': 35 };
+const PAY_YEARS_MAP: Record<string, number> = { '10年': 10, '15年': 15, '20年': 20, '30年': 30 };
 const PENSION_BUDGET_MAP: Record<string, number> = { '1万以下': 0.5, '1-3万': 2, '3-5万': 4, '5-10万': 7, '10万以上': 12 };
 
 function resolve(map: Record<string, number>, val: string, fallback: number): number {
@@ -564,7 +564,7 @@ export function calculate(input: UserInput): InsuranceResult {
   const comPension1 = resolve(PENSION_FUND_MAP, input.firstPersonComPension, 2);
   const personalPension1 = resolve(PENSION_FUND_MAP, input.firstPersonPersonalPension, 2);
   const socialPension1 = resolve(SOCIAL_PENSION_MAP, input.firstPersonSocialPension, 0.35);
-  const payYears1 = resolve(PAY_YEARS_MAP, input.firstPersonPayYears, 25);
+  const payYears1 = resolve(PAY_YEARS_MAP, input.firstPersonPayYears, 20);
   const pensionBudget1_val = resolve(PENSION_BUDGET_MAP, input.firstPersonPensionBudget, 2);
   const retireNeedFV1 = retireGoal1 * Math.pow(1 + inflationRate, remainingN1);
   // H4 = PV(0.05, C42, -H3, 0, 1)
@@ -688,7 +688,7 @@ export function calculate(input: UserInput): InsuranceResult {
   const comPension2 = resolve(PENSION_FUND_MAP, input.secondPersonComPension, 2);
   const personalPension2 = resolve(PENSION_FUND_MAP, input.secondPersonPersonalPension, 2);
   const socialPension2 = resolve(SOCIAL_PENSION_MAP, input.secondPersonSocialPension, 0.35);
-  const payYears2 = resolve(PAY_YEARS_MAP, input.secondPersonPayYears, 5);
+  const payYears2 = resolve(PAY_YEARS_MAP, input.secondPersonPayYears, 10);
   const pensionBudget2_val = resolve(PENSION_BUDGET_MAP, input.secondPersonPensionBudget, 0.5);
   const retireNeedFV2 = retireGoal2 * Math.pow(1 + inflationRate, remainingN2);
   const retireNeedPV2 = Excel.PV(discountRate, retireYears2, -retireNeedFV2, 0, 1);

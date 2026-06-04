@@ -133,8 +133,8 @@ export const defaultInput: UserInput = {
   secondPersonSocialPension: '0.2-0.5万',
 
   expectedReturn: 0.05,
-  firstPersonPayYears: '20-29年',
-  secondPersonPayYears: '10年以下',
+  firstPersonPayYears: '20年',
+  secondPersonPayYears: '10年',
   firstPersonPensionBudget: '1-3万',
   secondPersonPensionBudget: '1万以下',
 };

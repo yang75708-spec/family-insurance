@@ -94,8 +94,8 @@ const O: Record<string, string[]> = {
   secondPersonPersonalPension: ["无", "5万以下", "5-20万", "20-50万", "50万以上"],
   firstPersonSocialPension: ["0.2万以下", "0.2-0.5万", "0.5-1万", "1万以上"],
   secondPersonSocialPension: ["0.2万以下", "0.2-0.5万", "0.5-1万", "1万以上"],
-  firstPersonPayYears: ["10年以下", "10-19年", "20-29年", "30年以上"],
-  secondPersonPayYears: ["10年以下", "10-19年", "20-29年", "30年以上"],
+  firstPersonPayYears: ["10年", "15年", "20年", "30年"],
+  secondPersonPayYears: ["10年", "15年", "20年", "30年"],
   firstPersonPensionBudget: ["1万以下", "1-3万", "3-5万", "5-10万", "10万以上"],
   secondPersonPensionBudget: ["1万以下", "1-3万", "3-5万", "5-10万", "10万以上"],
 };
