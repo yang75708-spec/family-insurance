@@ -55,16 +55,16 @@ const MEMBERS = [
 
 // ─── Options ───
 const O: Record<string, string[]> = {
-  firstPersonIncome: ["15万以下", "15-30万", "30-60万", "60-100万", "100-300万", "300-500万", "500-1000万", "1000万以上"],
-  secondPersonIncome: ["15万以下", "15-30万", "30-60万", "60-100万", "100-300万", "300-500万", "500-1000万", "1000万以上"],
-  incomeStability: ["非常稳定（公务员/国企/事业单位）", "较稳定（大型企业核心岗）", "一般（中小企/绩效占比高）", "不稳定（自由职业/创业/销售）"],
-  incomeStability2: ["非常稳定（公务员/国企/事业单位）", "较稳定（大型企业核心岗）", "一般（中小企/绩效占比高）", "不稳定（自由职业/创业/销售）"],
+  firstPersonIncome: ["15万以下", "15-30万", "30-60万", "60-100万", "100万以上"],
+  secondPersonIncome: ["15万以下", "15-30万", "30-60万", "60-100万", "100万以上"],
+  incomeStability: ["非常稳定（例如：公务员/国企/事业单位）", "较稳定（例如：大型企业核心岗）", "一般（例如：中小企/绩效占比高）", "不稳定（例如：自由职业/创业/销售）"],
+  incomeStability2: ["非常稳定（例如：公务员/国企/事业单位）", "较稳定（例如：大型企业核心岗）", "一般（例如：中小企/绩效占比高）", "不稳定（例如：自由职业/创业/销售）"],
   mortgageBalance: ["大于等于100万", "大于等于50万小于100万", "无房贷"],
   otherLoanAmount: ["20万以内", "10-20万", "20-50万", "50万以上", "无其他贷款"],
-  bankDeposit: ["5万以下", "5-20万", "20-50万", "50-100万", "100-300万", "300-500万", "500-1000万", "1000万以上"],
+  bankDeposit: ["5万以下", "5-20万", "20-50万", "50-100万", "100万以上"],
   lowRiskInvestment: ["无", "5万以内", "5-20万", "20-50万", "50万以上"],
   annualExpense: ["5万以下", "5-10万", "10-20万", "20-50万", "50万以上"],
-  city: ["北上深", "二线城市", "普通地级市", "县城"],
+  city: ["北上广深", "二线城市", "普通地级市", "县城"],
   ciBudget: ["1万以下", "1-3万", "3-5万", "5-10万", "10万以上"],
   miBudget: ["0.5万以下", "0.5-1万", "1-3万", "3-5万", "5万以上"],
   childParentLifeIns: ["都不需要", "仅子女", "仅父母", "都需要"],
@@ -116,7 +116,7 @@ const PAGES: PG[] = [
       { key: "incomeStability", label: "第一经济支柱的职业稳定性", desc: "影响收入增长预期和风险系数", icon: I.chart, type: "select" },
       { key: "incomeStability2", label: "第二经济支柱的职业稳定性", desc: "影响第二支柱的收入风险系数", icon: I.chart, type: "select" },
       { key: "childCount", label: "有几个子女？", icon: I.baby, type: "number", min: 0, max: 10 },
-      { key: "parentSupportCount", label: "需要赡养几位父母？", icon: I.home, type: "number", min: 0, max: 6 },
+      { key: "parentSupportCount", label: "需要赡养几位老人？", icon: I.home, type: "number", min: 0, max: 6 },
       { key: "childAge", label: "最小子女的年龄是？", desc: "用于计算教育期保障年限", icon: I.baby, type: "number", unit: "岁", min: 0, max: 22 },
     ],
   },
@@ -704,7 +704,7 @@ export default function Home() {
                               className="w-full text-sm h-9 px-3.5 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary" />
                           </div>
                           <div>
-                            <label className="text-[11px] font-medium text-text-tertiary mb-1 block">赡养人数</label>
+                            <label className="text-[11px] font-medium text-text-tertiary mb-1 block">赡养老人数量</label>
                             <input type="text" inputMode="decimal" value={rawValues['parentSupportCount'] ?? (input.parentSupportCount === undefined || input.parentSupportCount === null ? '' : String(input.parentSupportCount))}
                               onChange={(e) => { const r = e.target.value; if (/^-?\d*\.?\d*$/.test(r)) handleTextInput('parentSupportCount', r); }}
                               onFocus={(e) => e.target.select()} onBlur={() => clearRawVal('parentSupportCount')}

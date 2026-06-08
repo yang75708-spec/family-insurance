@@ -190,7 +190,7 @@ function computeChildCIRecommendation(
   income1: number, income2: number
 ): number {
   // 城市基额（万元）
-  const cityBase = city === '北上深' ? 65
+  const cityBase = city === '北上广深' ? 65
     : city === '二线城市' ? 50
     : city === '普通地级市' ? 40 : 35;
   // 家庭收入系数（以家庭均值 45万 为基准 1.0）
@@ -237,10 +237,10 @@ function getCIRate(age: number, gender: string): number {
 const HEALTH_COEFF: Record<string, number> = { '健康': 1.0, '吸烟': 1.5, '有病史': 2.0 };
 
 const CAREER_RISK_MAP: Record<string, number> = {
-  '非常稳定（公务员/国企/事业单位）': 0.8,
-  '较稳定（大型企业核心岗）': 1.0,
-  '一般（中小企/绩效占比高）': 1.2,
-  '不稳定（自由职业/创业/销售）': 1.5,
+  '非常稳定（例如：公务员/国企/事业单位）': 0.8,
+  '较稳定（例如：大型企业核心岗）': 1.0,
+  '一般（例如：中小企/绩效占比高）': 1.2,
+  '不稳定（例如：自由职业/创业/销售）': 1.5,
 };
 
 function getSalaryGrowthForLife(age: number): number {
@@ -347,8 +347,8 @@ export function calculate(input: UserInput): InsuranceResult {
   const liquidAsset = getLiquidAsset(input.bankDeposit, input.lowRiskInvestment);
 
   // ==================== H/I 列：健康险参数 ====================
-  // H9 = IF(D9="北上深",80,IF(D9="二线城市",50,IF(D9="普通地级市",30,30)))
-  const baseMedicalCost1 = input.city === '北上深' ? 80
+  // H9 = IF(D9="北上广深",80,IF(D9="二线城市",50,IF(D9="普通地级市",30,30)))
+  const baseMedicalCost1 = input.city === '北上广深' ? 80
     : input.city === '二线城市' ? 50
     : input.city === '普通地级市' ? 30 : 30;
   // I9 same
@@ -375,8 +375,8 @@ export function calculate(input: UserInput): InsuranceResult {
     medicalCapKmax2 * baseMedicalCost2
   );
 
-  // H13 = IF(D9="北上深",7,IF(D9="二线城市",7,6))
-  const kcap1 = input.city === '北上深' ? 7
+  // H13 = IF(D9="北上广深",7,IF(D9="二线城市",7,6))
+  const kcap1 = input.city === '北上广深' ? 7
     : input.city === '二线城市' ? 7 : 6;
   const kcap2 = kcap1;
 
@@ -385,8 +385,8 @@ export function calculate(input: UserInput): InsuranceResult {
   // I14
   const kDir2 = incomeConversion2 < 10 ? 0.9 : (incomeConversion2 < 30 ? 0.7 : 0.5);
 
-  // H15 = IF(D9="北上深",1.2,IF(D9="二线城市",1,IF(D9="普通地级市",0.8,0.6)))
-  const kCity1 = input.city === '北上深' ? 1.2
+  // H15 = IF(D9="北上广深",1.2,IF(D9="二线城市",1,IF(D9="普通地级市",0.8,0.6)))
+  const kCity1 = input.city === '北上广深' ? 1.2
     : input.city === '二线城市' ? 1
     : input.city === '普通地级市' ? 0.8 : 0.6;
   const kCity2 = kCity1;
