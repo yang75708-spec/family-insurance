@@ -53,6 +53,36 @@ const MEMBERS = [
   { key: "parent", label: "父母" },
 ] as const;
 
+// 期望医疗消费档位区间（元/年）— 修订版Excel「期望医疗消费区间(自选)」
+const MEDICAL_BRACKET_RANGES: Record<string, Record<string, string[]>> = {
+  '一线': {
+    '优': ['0~500', '500~1,500', '1,500~3,000'],
+    '良': ['500~2,000', '2,000~5,000', '5,000~10,000'],
+    '差': ['2,000~8,000', '8,000~20,000', '20,000~50,000'],
+  },
+  '新一线': {
+    '优': ['0~400', '400~1,200', '1,200~2,500'],
+    '良': ['400~1,500', '1,500~4,000', '4,000~8,000'],
+    '差': ['1,500~6,000', '6,000~15,000', '15,000~40,000'],
+  },
+  '二线/普通地级市': {
+    '优': ['0~300', '300~1,000', '1,000~2,000'],
+    '良': ['300~1,200', '1,200~3,000', '3,000~6,000'],
+    '差': ['1,000~5,000', '5,000~12,000', '12,000~30,000'],
+  },
+  '县城': {
+    '优': ['0~200', '200~800', '800~1,500'],
+    '良': ['200~1,000', '1,000~2,500', '2,500~5,000'],
+    '差': ['800~4,000', '4,000~10,000', '10,000~25,000'],
+  },
+};
+function getMedCityGroup(city: string): string {
+  if (city === '北上广深') return '一线';
+  if (city === '二线城市') return '新一线';
+  if (city === '普通地级市') return '二线/普通地级市';
+  return '县城';
+}
+
 // ─── Options ───
 const O: Record<string, string[]> = {
   firstPersonIncome: ["15万以下", "15-30万", "30-60万", "60-100万", "100万以上"],
@@ -936,21 +966,26 @@ export default function Home() {
                       { label: "第一经济支柱", pkey: 'p1' as const },
                       { label: "第二经济支柱", pkey: 'p2' as const },
                     ].map((pillar) => {
+                      const hk = pillar.pkey === 'p1' ? 'firstPersonHealthStatus' : 'secondPersonHealthStatus';
                       const bk = pillar.pkey === 'p1' ? 'p1_期望医疗消费档位' : 'p2_期望医疗消费档位';
+                      const ranges = MEDICAL_BRACKET_RANGES[getMedCityGroup(input.city)]?.[String(input[hk] ?? '良')] ?? [];
+                      const severeCostText = (input.city === '北上广深' || input.city === '二线城市') ? '50万' : '30万';
                       return (
                         <motion.div key={pillar.pkey} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-card p-6">
                           <h3 className="text-sm font-semibold text-text-primary mb-1">{pillar.label} — 期望医疗消费档位</h3>
-                          <p className="text-[11px] text-text-tertiary mb-3">结合居住城市与身体状况，预估该成员每年的常规医疗花销，用于测算医疗险缺口（重症治疗费已按城市直接计入重疾缺口）</p>
+                          <p className="text-[11px] text-text-tertiary mb-3">结合居住城市与身体状况，选择该成员每年的常规医疗花销区间</p>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
                             <div>
                               <label className="text-[11px] font-medium text-text-tertiary mb-1 block">期望医疗消费档位</label>
                               <select value={String(input[bk] ?? 'B')} onChange={(e) => handle(bk, e.target.value)}
                                 className="w-full text-sm h-10 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-9">
-                                {["A", "B", "C"].map((b) => <option key={b} value={b}>{b} 档</option>)}
+                                {["A", "B", "C"].map((b, i) => (
+                                  <option key={b} value={b}>{ranges[i] ? `${ranges[i]} 元/年` : `${b} 档`}</option>
+                                ))}
                               </select>
                             </div>
-                            <div className="text-[11px] text-text-tertiary leading-relaxed pb-1">
-                              档位越高，预估年度医疗花销越高，对应医疗险缺口越大；重症治疗费（一线/新一线50万，其余30万）无需选择，已按城市计入重疾缺口
+                            <div className="text-[11px] text-text-tertiary pb-1">
+                              重症已为您考虑城市基本花销{severeCostText}
                             </div>
                           </div>
                         </motion.div>
