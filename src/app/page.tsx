@@ -76,8 +76,11 @@ const O: Record<string, string[]> = {
   secondPersonLifeTerm: ["63岁", "65岁", "终身", "房贷还清或子女成年"],
   firstPersonGender: ["男性", "女性"],
   secondPersonGender: ["男性", "女性"],
-  firstPersonHealthStatus: ["健康", "吸烟", "有病史"],
-  secondPersonHealthStatus: ["健康", "吸烟", "有病史"],
+  firstPersonHealthStatus: ["优", "良", "差"],
+  secondPersonHealthStatus: ["优", "良", "差"],
+  p1_期望医疗消费档位: ["A", "B", "C"],
+  p2_期望医疗消费档位: ["A", "B", "C"],
+  familyCoefficient: ["保守", "稳健", "进取"],
   firstPersonExistingLifeYears: ["10年以下", "10-20年", "20年以上", "不清楚"],
   secondPersonExistingLifeYears: ["10年以下", "10-20年", "20年以上", "不清楚"],
   firstPersonRetireAge: ["55-59岁", "60-64岁", "65-69岁", "70岁以上"],
@@ -183,7 +186,7 @@ function PersonTabs({ result, color }: { result: Record<string, unknown>; color:
   const [tab, setTab] = useState<"health" | "life" | "pension">("health");
   const tabs = [{ k: "health" as const, l: "健康险" }, { k: "life" as const, l: "寿险" }, { k: "pension" as const, l: "养老金" }];
   const panels: Record<string, React.ReactNode> = {
-    health: (<><R label="建议重疾险保额" value={`${Number(result.recommendedCICoverage).toFixed(0)} 万元`} /><R label="重疾险缺口" value={`${Number(result.ciGap).toFixed(0)} 万元`} trend={Number(result.ciGap) > 20 ? "bad" : "good"} /><R label="建议医疗险类型" value={String(result.recommendedMIType)} />{String(result.recommendedMIReason) && <div className="text-[10px] text-text-tertiary leading-tight mt-0.5 mb-2 pl-1 border-l-2 border-sage-200/60">{String(result.recommendedMIReason)}</div>}<R label="医疗险缺口" value={`${Number(result.miGap).toFixed(1)} 万元`} trend={Number(result.miGap) > 10 ? "bad" : "good"} /><R label="重疾险年保费" value={`${Number(result.estimatedCIPremium).toFixed(2)} 万元`} /><R label="预算检验" value={String(result.healthBudgetResult)} trend={String(result.healthBudgetResult).includes("✅") ? "good" : "bad"} /></>),
+    health: (<><R label="建议重疾险保额" value={`${Number(result.recommendedCICoverage).toFixed(0)} 万元`} /><R label="重疾险缺口" value={`${Number(result.ciGap).toFixed(0)} 万元`} trend={Number(result.ciGap) > 20 ? "bad" : "good"} /><R label="期望医疗消费" value={`${Number(result.recommendedMICoverage).toFixed(1)} 万元/年`} /><R label="医疗险缺口" value={`${Number(result.miGap).toFixed(1)} 万元`} trend={Number(result.miGap) > 10 ? "bad" : "good"} /><R label="建议医疗险类型" value={String(result.recommendedMIType)} />{String(result.recommendedMIReason) && <div className="text-[10px] text-text-tertiary leading-tight mt-0.5 mb-2 pl-1 border-l-2 border-sage-200/60">{String(result.recommendedMIReason)}</div>}<R label="重疾险年保费" value={`${Number(result.estimatedCIPremium).toFixed(2)} 万元`} /><R label="预算检验" value={String(result.healthBudgetResult)} trend={String(result.healthBudgetResult).includes("✅") ? "good" : "bad"} /></>),
     life: (<><R label="建议寿险保额" value={`${Number(result.recommendedLifeCoverage).toFixed(0)} 万元`} /><R label="寿险缺口" value={`${Number(result.lifeGap).toFixed(0)} 万元`} trend={Number(result.lifeGap) > 50 ? "bad" : "good"} /><R label="预估年保费" value={`${Number(result.estimatedLifePremium).toFixed(2)} 万元`} /><R label="预算检验" value={String(result.lifeBudgetResult)} trend={String(result.lifeBudgetResult).includes("✅") ? "good" : "bad"} /><R label="配置建议" value={String(result.lifeTermSuggestion)} /></>),
     pension: (<><R label="建议年补充养老金" value={`${Number(result.recommendedPensionAnnual).toFixed(0)} 万元`} /><R label="养老金缺口" value={`${Number(result.pensionGap).toFixed(0)} 万元`} trend={Number(result.pensionGap) > 50 ? "bad" : "good"} /><R label="已有储备终值" value={`${Number(result.existingPensionFV).toFixed(0)} 万元`} /><R label="缴费年限" value={`${Number(result.payYears).toFixed(0)} 年`} /><R label="预算检验" value={String(result.pensionBudgetResult)} trend={String(result.pensionBudgetResult).includes("✅") ? "good" : "bad"} /></>),
   };
@@ -927,6 +930,52 @@ export default function Home() {
                     </table>
                   </div>
 
+                  {/* 期望医疗消费档位 + 家庭系数（经济支柱） */}
+                  <div className="mt-5 space-y-4">
+                    {[
+                      { label: "第一经济支柱", pkey: 'p1' as const },
+                      { label: "第二经济支柱", pkey: 'p2' as const },
+                    ].map((pillar) => {
+                      const bk = pillar.pkey === 'p1' ? 'p1_期望医疗消费档位' : 'p2_期望医疗消费档位';
+                      return (
+                        <motion.div key={pillar.pkey} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-card p-6">
+                          <h3 className="text-sm font-semibold text-text-primary mb-1">{pillar.label} — 期望医疗消费档位</h3>
+                          <p className="text-[11px] text-text-tertiary mb-3">结合居住城市与身体状况，预估该成员每年的常规医疗花销，用于测算医疗险缺口（重症治疗费已按城市直接计入重疾缺口）</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                            <div>
+                              <label className="text-[11px] font-medium text-text-tertiary mb-1 block">期望医疗消费档位</label>
+                              <select value={String(input[bk] ?? 'B')} onChange={(e) => handle(bk, e.target.value)}
+                                className="w-full text-sm h-10 px-4 rounded-input border border-sage-200/50 bg-white/60 focus:border-sage-300 focus:ring-2 focus:ring-sage-300/20 outline-none transition-all text-text-primary appearance-none pr-9">
+                                {["A", "B", "C"].map((b) => <option key={b} value={b}>{b} 档</option>)}
+                              </select>
+                            </div>
+                            <div className="text-[11px] text-text-tertiary leading-relaxed pb-1">
+                              档位越高，预估年度医疗花销越高，对应医疗险缺口越大；重症治疗费（一线/新一线50万，其余30万）无需选择，已按城市计入重疾缺口
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+
+                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-card p-6">
+                      <h3 className="text-sm font-semibold text-text-primary mb-1">家庭系数</h3>
+                      <p className="text-[11px] text-text-tertiary mb-3">若家庭成员患重症，家庭愿意动用多少流动资产承担治疗费用？该系数将用于抵扣整体健康险缺口</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {O.familyCoefficient.map((opt) => (
+                          <button key={opt} onClick={() => handle("familyCoefficient", opt)}
+                            className={cn(
+                              "flex-1 text-sm h-10 px-3 rounded-input border transition-all font-medium",
+                              input.familyCoefficient === opt
+                                ? "bg-sage-300/80 text-white border-sage-300"
+                                : "bg-white/60 text-text-tertiary border-sage-200/50 hover:border-sage-300 hover:text-sage-600"
+                            )}>
+                            {opt === '保守' ? '保守（≤30%）' : opt === '稳健' ? '稳健（30~50%）' : '进取（50%+）'}
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  </div>
+
                   {/* Detail forms */}
                   <div className="mt-5 space-y-4">
                     {MEMBERS.map((m) => {
@@ -1147,7 +1196,7 @@ export default function Home() {
                   {/* 概览卡片 */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <StatCard label="总保障缺口" value={`${result.totalGap.toFixed(0)} 万元`} trend={result.totalGap > 100 ? "bad" : result.totalGap > 30 ? "neutral" : "good"} />
-                    <StatCard label="健康险缺口" value={`${result.totalHealthGap.toFixed(0)} 万元`} trend={result.totalHealthGap > 50 ? "bad" : "good"} />
+                    <StatCard label="健康险缺口（已抵流动资产）" value={`${result.totalHealthGap.toFixed(0)} 万元`} trend={result.totalHealthGap > 50 ? "bad" : "good"} />
                     <StatCard label="寿险缺口" value={`${result.totalLifeGap.toFixed(0)} 万元`} trend={result.totalLifeGap > 50 ? "bad" : "good"} />
                     <StatCard label="养老金缺口" value={`${result.totalPensionGap.toFixed(0)} 万元`} trend={result.totalPensionGap > 50 ? "bad" : "good"} />
                     <StatCard label="风险等级" value={result.riskLevel} trend={result.riskLevel === "低风险" ? "good" : result.riskLevel === "中等风险" ? "neutral" : "bad"} />

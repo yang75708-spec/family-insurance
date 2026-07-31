@@ -261,7 +261,12 @@ export const Excel = {
 };
 
 // ====== 辅助函数 ======
-/** Excel 的 CHOOSE(MATCH(...)) 模式，用于稳定性系数 Kjob */
+/** Excel 的 CHOOSE(MATCH(...)) 模式，用于稳定性系数 Kjob
+ *  系数值按修订版Excel「分行业工资参考」建议Kjob分配：
+ *  非常稳定(公务员/国企/事业)→0.95，较稳定(大型企业核心岗)→0.85，
+ *  一般(中小企/绩效占比高)→0.70，不稳定(自由职业/创业/销售)→0.55
+ *  含义：收入越稳定，未来收入计入PV的比例越高
+ */
 export function getJobStabilityFactor(stability: string): number {
   const match = Excel.MATCH(stability, [
     '非常稳定（例如：公务员/国企/事业单位）',
@@ -269,7 +274,12 @@ export function getJobStabilityFactor(stability: string): number {
     '一般（例如：中小企/绩效占比高）',
     '不稳定（例如：自由职业/创业/销售）'
   ]);
-  return Excel.CHOOSE(match, 0.7, 1, 1.4, 1.6);
+  return Excel.CHOOSE(match, 0.95, 0.85, 0.70, 0.55);
+}
+
+/** 身体状况自评系数（优/良/差）→ 保费系数 */
+export function getHealthStatusCoeff(status: string): number {
+  return Excel.SWITCH(status, '优', 1.0, '良', 1.5, '差', 2.0, 1.0);
 }
 
 /** Excel L8 = CHOOSE(MATCH(D6,...),...) + CHOOSE(MATCH(D7,...),...) */

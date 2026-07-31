@@ -84,8 +84,13 @@ export const defaultInput: UserInput = {
   // 新字段
   firstPersonGender: '男性',
   secondPersonGender: '男性',
-  firstPersonHealthStatus: '健康',
-  secondPersonHealthStatus: '健康',
+  firstPersonHealthStatus: '良',
+  secondPersonHealthStatus: '良',
+
+  // 健康险新增（新版公式）
+  p1_期望医疗消费档位: 'B',
+  p2_期望医疗消费档位: 'B',
+  familyCoefficient: '稳健',
   firstPersonHasLifeIns: false,
   secondPersonHasLifeIns: false,
   firstPersonExistingLifeYears: '不清楚',

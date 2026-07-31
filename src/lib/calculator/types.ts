@@ -88,8 +88,15 @@ export interface UserInput {
 
   firstPersonGender: string;        // 性别
   secondPersonGender: string;       // 性别
-  firstPersonHealthStatus: string;  // 健康状态
-  secondPersonHealthStatus: string; // 健康状态
+  firstPersonHealthStatus: string;  // 身体状况自评（优/良/差）——驱动期望医疗消费档位 + 保费系数
+  secondPersonHealthStatus: string; // 身体状况自评（优/良/差）
+
+  // ===== 健康险新增（新版公式） =====
+  // 期望医疗消费档位（A/B/C；重症治疗费不设档位，按城市直接计入重疾缺口）
+  p1_期望医疗消费档位: string;
+  p2_期望医疗消费档位: string;
+  // 家庭系数 α：患重症愿意动用的流动资产比例（保守/稳健/进取）
+  familyCoefficient: string;
   firstPersonHasLifeIns: boolean;   // 是否有寿险
   secondPersonHasLifeIns: boolean;  // 是否有寿险
   firstPersonExistingLifeYears: string; // 已有寿险剩余年限
