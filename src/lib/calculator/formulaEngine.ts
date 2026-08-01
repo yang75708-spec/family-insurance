@@ -191,7 +191,7 @@ function computeChildCIRecommendation(
 ): number {
   // 城市基额（万元）
   const cityBase = city === '北上广深' ? 65
-    : city === '二线城市' ? 50
+    : city === '新一线/二线' ? 50
     : city === '普通地级市' ? 40 : 35;
   // 家庭收入系数（以家庭均值 45万 为基准 1.0）
   const familyAvg = (income1 + income2) / 2;
@@ -281,15 +281,15 @@ function getAgeCoverageRatio(age: number): number {
 /** 网站城市选项 → Excel档位表城市分组 */
 function getCityGroup(city: string): string {
   if (city === '北上广深') return '一线';
-  if (city === '二线城市') return '新一线';
-  if (city === '普通地级市') return '二线';
+  if (city === '新一线/二线') return '新一线/二线';
+  if (city === '普通地级市') return '普通地级市';
   return '县城';
 }
 
-/** 重症基础花销：一线/新一线 50万，二线及以下 30万 */
+/** 重症基础花销：一线、新一线/二线 50万，普通地级市及以下 30万 */
 function getSevereCost(city: string): number {
   const g = getCityGroup(city);
-  return g === '一线' || g === '新一线' ? 50 : 30;
+  return g === '一线' || g === '新一线/二线' ? 50 : 30;
 }
 
 /** 期望医疗消费档位（元/年区间中值 → 万元）
@@ -302,12 +302,12 @@ const MEDICAL_BRACKETS: Record<string, Record<string, Record<string, number>>> =
     '良': { A: 0.125, B: 0.35, C: 0.75 },
     '差': { A: 0.5, B: 1.4, C: 3.5 },
   },
-  '新一线': {
+  '新一线/二线': {
     '优': { A: 0.02, B: 0.08, C: 0.185 },
     '良': { A: 0.095, B: 0.275, C: 0.6 },
     '差': { A: 0.375, B: 1.05, C: 2.75 },
   },
-  '二线': {
+  '普通地级市': {
     '优': { A: 0.015, B: 0.065, C: 0.15 },
     '良': { A: 0.075, B: 0.21, C: 0.45 },
     '差': { A: 0.3, B: 0.85, C: 2.1 },
@@ -385,10 +385,10 @@ export function calculate(input: UserInput): InsuranceResult {
   const liquidAsset = getLiquidAsset(input.bankDeposit, input.lowRiskInvestment);
 
   // ==================== H/I 列：健康险参数（新版公式） ====================
-  // H9 = IF(D9="北上广深",80,IF(D9="二线城市",50,IF(D9="普通地级市",30,30)))
+  // H9 = IF(D9="北上广深",80,IF(D9="新一线/二线",50,IF(D9="普通地级市",30,30)))
   // （子女/父母医疗险推荐仍使用）
   const baseMedicalCost1 = input.city === '北上广深' ? 80
-    : input.city === '二线城市' ? 50
+    : input.city === '新一线/二线' ? 50
     : input.city === '普通地级市' ? 30 : 30;
   const baseMedicalCost2 = baseMedicalCost1;
 

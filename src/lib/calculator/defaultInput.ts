@@ -19,7 +19,7 @@ export const defaultInput: UserInput = {
   bankDeposit: '5-20万',
   lowRiskInvestment: '5万以内',
   annualExpense: '10-20万',
-  city: '二线城市',
+  city: '新一线/二线',
 
   // 健康险（新版：全部默认勾选社保医保）
   p1_社保医保: true,
