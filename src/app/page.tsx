@@ -83,6 +83,19 @@ function getMedCityGroup(city: string): string {
   return '县城';
 }
 
+// 旧版选项值 → 新版：选项改名/精简后，localStorage 中残留的旧值需迁移，否则会回退到错误档位
+const LEGACY_VALUE_MAP: Record<string, string> = {
+  '北上深': '北上广深',
+  '非常稳定（公务员/国企/事业单位）': '非常稳定（例如：公务员/国企/事业单位）',
+  '较稳定（大型企业核心岗）': '较稳定（例如：大型企业核心岗）',
+  '一般（中小企/绩效占比高）': '一般（例如：中小企/绩效占比高）',
+  '不稳定（自由职业/创业/销售）': '不稳定（例如：自由职业/创业/销售）',
+  '100-300万': '100万以上',
+  '300-500万': '100万以上',
+  '500-1000万': '100万以上',
+  '1000万以上': '100万以上',
+};
+
 // ─── Options ───
 const O: Record<string, string[]> = {
   firstPersonIncome: ["15万以下", "15-30万", "30-60万", "60-100万", "100万以上"],
@@ -422,6 +435,14 @@ export default function Home() {
       const raw = localStorage.getItem('family-insurance-data');
       if (raw) {
         const data = JSON.parse(raw) as UserInput;
+        // 迁移旧版选项值（如 city "北上深"→"北上广深"），避免回退到县城档/默认系数
+        const rec = data as unknown as Record<string, unknown>;
+        for (const k of Object.keys(rec)) {
+          const v = rec[k];
+          if (typeof v === 'string' && LEGACY_VALUE_MAP[v]) {
+            rec[k] = LEGACY_VALUE_MAP[v];
+          }
+        }
         // 简单校验：至少 firstPersonAge 存在且为数字
         if (typeof data.firstPersonAge === 'number') {
           setSavedData(data);
