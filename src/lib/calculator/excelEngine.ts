@@ -114,7 +114,7 @@ export const Excel = {
   getCity(val: string): number {
     return this.SWITCH(val,
       '北上广深', 15,
-      '二线城市', 12,
+      '新一线/二线', 12,
       '普通地级市', 9,
       '县城', 6,
       '0'

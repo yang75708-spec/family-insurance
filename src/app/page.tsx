@@ -60,12 +60,12 @@ const MEDICAL_BRACKET_RANGES: Record<string, Record<string, string[]>> = {
     '良': ['500~2,000', '2,000~5,000', '5,000~10,000'],
     '差': ['2,000~8,000', '8,000~20,000', '20,000~50,000'],
   },
-  '新一线': {
+  '新一线/二线': {
     '优': ['0~400', '400~1,200', '1,200~2,500'],
     '良': ['400~1,500', '1,500~4,000', '4,000~8,000'],
     '差': ['1,500~6,000', '6,000~15,000', '15,000~40,000'],
   },
-  '二线/普通地级市': {
+  '普通地级市': {
     '优': ['0~300', '300~1,000', '1,000~2,000'],
     '良': ['300~1,200', '1,200~3,000', '3,000~6,000'],
     '差': ['1,000~5,000', '5,000~12,000', '12,000~30,000'],
@@ -78,14 +78,16 @@ const MEDICAL_BRACKET_RANGES: Record<string, Record<string, string[]>> = {
 };
 function getMedCityGroup(city: string): string {
   if (city === '北上广深') return '一线';
-  if (city === '二线城市') return '新一线';
-  if (city === '普通地级市') return '二线/普通地级市';
+  if (city === '新一线/二线') return '新一线/二线';
+  if (city === '普通地级市') return '普通地级市';
   return '县城';
 }
 
 // 旧版选项值 → 新版：选项改名/精简后，localStorage 中残留的旧值需迁移，否则会回退到错误档位
 const LEGACY_VALUE_MAP: Record<string, string> = {
   '北上深': '北上广深',
+  '一线': '北上广深',
+  '二线城市': '新一线/二线',
   '非常稳定（公务员/国企/事业单位）': '非常稳定（例如：公务员/国企/事业单位）',
   '较稳定（大型企业核心岗）': '较稳定（例如：大型企业核心岗）',
   '一般（中小企/绩效占比高）': '一般（例如：中小企/绩效占比高）',
@@ -107,7 +109,7 @@ const O: Record<string, string[]> = {
   bankDeposit: ["5万以下", "5-20万", "20-50万", "50-100万", "100万以上"],
   lowRiskInvestment: ["无", "5万以内", "5-20万", "20-50万", "50万以上"],
   annualExpense: ["5万以下", "5-10万", "10-20万", "20-50万", "50万以上"],
-  city: ["北上广深", "二线城市", "普通地级市", "县城"],
+  city: ["北上广深", "新一线/二线", "普通地级市", "县城"],
   ciBudget: ["1万以下", "1-3万", "3-5万", "5-10万", "10万以上"],
   miBudget: ["0.5万以下", "0.5-1万", "1-3万", "3-5万", "5万以上"],
   childParentLifeIns: ["都不需要", "仅子女", "仅父母", "都需要"],
@@ -435,7 +437,7 @@ export default function Home() {
       const raw = localStorage.getItem('family-insurance-data');
       if (raw) {
         const data = JSON.parse(raw) as UserInput;
-        // 迁移旧版选项值（如 city "北上深"→"北上广深"），避免回退到县城档/默认系数
+        // 迁移旧版选项值（如 city "北上深"/"一线"→"北上广深"、"二线城市"→"新一线/二线"），避免回退到县城档/默认系数
         const rec = data as unknown as Record<string, unknown>;
         for (const k of Object.keys(rec)) {
           const v = rec[k];
@@ -990,7 +992,7 @@ export default function Home() {
                       const hk = pillar.pkey === 'p1' ? 'firstPersonHealthStatus' : 'secondPersonHealthStatus';
                       const bk = pillar.pkey === 'p1' ? 'p1_期望医疗消费档位' : 'p2_期望医疗消费档位';
                       const ranges = MEDICAL_BRACKET_RANGES[getMedCityGroup(input.city)]?.[String(input[hk] ?? '良')] ?? [];
-                      const severeCostText = (input.city === '北上广深' || input.city === '二线城市') ? '50万' : '30万';
+                      const severeCostText = (input.city === '北上广深' || input.city === '新一线/二线') ? '50万' : '30万';
                       return (
                         <motion.div key={pillar.pkey} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-card p-6">
                           <h3 className="text-sm font-semibold text-text-primary mb-1">{pillar.label} — 期望医疗消费档位</h3>
